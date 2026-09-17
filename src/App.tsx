@@ -780,14 +780,14 @@ export function App() {
                 </li>
                 <li>
                   <span className="footer-contact-item">
-                    <i className="fa-solid fa-envelope" style={{ marginRight: 6 }} />
-                    <a href="mailto:info@crazydefenseheroes.co.uk">info@crazydefenseheroes.co.uk</a>
+                    <i className="fa-solid fa-envelope" style={{ marginRight: 6, color: '#df5e29' }} />
+                    <a href="mailto:info@crazydefensehereoes.co.uk">info@crazydefensehereoes.co.uk</a>
                   </span>
                 </li>
                 <li>
                   <span className="footer-contact-item">
-                    <i className="fa-solid fa-globe" style={{ marginRight: 6 }} />
-                    <a href="https://crazydefenseheroes.co.uk" target="_blank" rel="noreferrer">crazydefenseheroes.co.uk</a>
+                    <i className="fa-solid fa-globe" style={{ marginRight: 6, color: '#df5e29' }} />
+                    <a href="https://crazydefensehereoes.co.uk" target="_blank" rel="noreferrer">crazydefensehereoes.co.uk</a>
                   </span>
                 </li>
               </ul>

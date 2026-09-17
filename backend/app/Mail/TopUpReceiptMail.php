@@ -25,7 +25,7 @@ class TopUpReceiptMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: config('mail.from.address', 'info@crazydefenseheroes.co.uk'),
+            from: config('mail.from.address', 'info@crazydefensehereoes.co.uk'),
             subject: '💎 Treasury Top-Up Confirmation | Crazy Defense Heroes',
         );
     }

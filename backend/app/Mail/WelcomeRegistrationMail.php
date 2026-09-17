@@ -20,7 +20,7 @@ class WelcomeRegistrationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: config('mail.from.address', 'info@crazydefenseheroes.co.uk'),
+            from: config('mail.from.address', 'info@crazydefensehereoes.co.uk'),
             subject: '⚔️ Welcome to the Watch, '.$this->user->name.'! | Crazy Defense Heroes',
         );
     }

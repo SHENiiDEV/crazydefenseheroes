@@ -12,8 +12,8 @@ export const COMPANY_INFO = {
   name: 'Crazy Defense Heroes Ltd',
   number: '14892341',
   address: '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom',
-  email: 'info@crazydefenseheroes.co.uk',
-  domain: 'crazydefenseheroes.co.uk',
+  email: 'info@crazydefensehereoes.co.uk',
+  domain: 'crazydefensehereoes.co.uk',
 };
 
 export function LegalModal({ initialTab = 'terms', language, onClose }: LegalModalProps) {

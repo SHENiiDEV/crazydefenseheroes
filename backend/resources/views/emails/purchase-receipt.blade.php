@@ -26,7 +26,7 @@
             <p><strong>{{ config('company.name', 'Crazy Defense Heroes Ltd') }}</strong></p>
             <p>Registration No: <strong>{{ config('company.number', '14892341') }}</strong></p>
             <p>Address: {{ config('company.address', '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom') }}</p>
-            <p>Support: <a href="mailto:{{ config('company.email', 'info@crazydefenseheroes.co.uk') }}">{{ config('company.email', 'info@crazydefenseheroes.co.uk') }}</a> · <a href="https://{{ config('company.domain', 'crazydefenseheroes.co.uk') }}">{{ config('company.domain', 'crazydefenseheroes.co.uk') }}</a></p>
+            <p>Support: <a href="mailto:{{ config('company.email', 'info@crazydefensehereoes.co.uk') }}">{{ config('company.email', 'info@crazydefensehereoes.co.uk') }}</a> · <a href="https://{{ config('company.domain', 'crazydefensehereoes.co.uk') }}">{{ config('company.domain', 'crazydefensehereoes.co.uk') }}</a></p>
         </div>
     </div>
 </body>

@@ -65,7 +65,7 @@
                 <p><strong>{{ $company['name'] ?? 'Crazy Defense Heroes Ltd' }}</strong></p>
                 <p>Company Registration No: <strong>{{ $company['number'] ?? '14892341' }}</strong></p>
                 <p>Registered Address: {{ $company['address'] ?? '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom' }}</p>
-                <p>Email: <a href="mailto:{{ $company['email'] ?? 'info@crazydefenseheroes.co.uk' }}">{{ $company['email'] ?? 'info@crazydefenseheroes.co.uk' }}</a> · Website: <a href="https://{{ $company['domain'] ?? 'crazydefenseheroes.co.uk' }}">{{ $company['domain'] ?? 'crazydefenseheroes.co.uk' }}</a></p>
+                <p>Email: <a href="mailto:{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}">{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}</a> · Website: <a href="https://{{ $company['domain'] ?? 'crazydefensehereoes.co.uk' }}">{{ $company['domain'] ?? 'crazydefensehereoes.co.uk' }}</a></p>
                 <p>© {{ date('Y') }} {{ $company['name'] ?? 'Crazy Defense Heroes Ltd' }}. All rights reserved.</p>
             </div>
         </div>

@@ -48,16 +48,16 @@
             </div>
 
             <div class="btn-wrap">
-                <a href="https://{{ $company['domain'] ?? 'crazydefenseheroes.co.uk' }}" class="btn">Enter Battle Arena ↗</a>
+                <a href="https://{{ $company['domain'] ?? 'crazydefensehereoes.co.uk' }}" class="btn">Enter Battle Arena ↗</a>
             </div>
 
-            <p style="font-size: 12px; color: #887a64; text-align: center;">Need assistance? Contact our dispatchers at <a href="mailto:{{ $company['email'] ?? 'info@crazydefenseheroes.co.uk' }}" style="color: #df5e29;">{{ $company['email'] ?? 'info@crazydefenseheroes.co.uk' }}</a>.</p>
+            <p style="font-size: 12px; color: #887a64; text-align: center;">Need assistance? Contact our dispatchers at <a href="mailto:{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}" style="color: #df5e29;">{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}</a>.</p>
 
             <div class="footer">
                 <p><strong>{{ $company['name'] ?? 'Crazy Defense Heroes Ltd' }}</strong></p>
                 <p>Company Registration No: <strong>{{ $company['number'] ?? '14892341' }}</strong></p>
                 <p>Registered Address: {{ $company['address'] ?? '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom' }}</p>
-                <p>Email: <a href="mailto:{{ $company['email'] ?? 'info@crazydefenseheroes.co.uk' }}">{{ $company['email'] ?? 'info@crazydefenseheroes.co.uk' }}</a> · Website: <a href="https://{{ $company['domain'] ?? 'crazydefenseheroes.co.uk' }}">{{ $company['domain'] ?? 'crazydefenseheroes.co.uk' }}</a></p>
+                <p>Email: <a href="mailto:{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}">{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}</a> · Website: <a href="https://{{ $company['domain'] ?? 'crazydefensehereoes.co.uk' }}">{{ $company['domain'] ?? 'crazydefensehereoes.co.uk' }}</a></p>
                 <p>© {{ date('Y') }} {{ $company['name'] ?? 'Crazy Defense Heroes Ltd' }}. All rights reserved.</p>
             </div>
         </div>

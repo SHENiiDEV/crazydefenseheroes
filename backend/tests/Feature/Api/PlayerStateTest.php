@@ -143,7 +143,7 @@ class PlayerStateTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.email', 'info@crazydefenseheroes.co.uk')
+            ->assertJsonPath('data.email', 'info@crazydefensehereoes.co.uk')
             ->assertJsonPath('data.number', '14892341');
     }
 }

@@ -193,21 +193,36 @@ function AuthModal({
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const result = await response.json() as {
-        success?: boolean;
-        data?: { token: string; user: { id: number; name: string; surname: string; email: string } };
-        error?: { message?: string; details?: ApiErrorDetails };
-      };
 
-      if (!response.ok || !result.success || !result.data?.token) {
-        setFormError(result.error?.message ?? (language === 'RU' ? 'Ошибка регистрации. Проверьте данные.' : 'Registration could not be completed.'));
-        setFieldErrors(result.error?.details ?? {});
+      const isJson = response.headers.get('content-type')?.includes('application/json');
+      const result = isJson
+        ? (await response.json() as {
+            success?: boolean;
+            data?: { token: string; user: { id: number; name: string; surname: string; email: string } };
+            error?: { message?: string; details?: ApiErrorDetails };
+          })
+        : null;
+
+      if (!response.ok || !result?.success || !result?.data?.token) {
+        setFormError(
+          result?.error?.message ??
+            (result?.error?.details ? 'Validation failed' : '') ??
+            (language === 'RU'
+              ? `Ошибка сервера (${response.status} ${response.statusText}). Проверьте настройки бэкенда.`
+              : `Server error (${response.status} ${response.statusText}).`),
+        );
+        setFieldErrors(result?.error?.details ?? {});
         return;
       }
 
       onAuthSuccess(result.data.token, result.data.user);
-    } catch {
-      setFormError(language === 'RU' ? 'Сервер временно недоступен. Попробуйте снова.' : 'Game server is currently unreachable. Please try again.');
+    } catch (err) {
+      console.error('Registration error:', err);
+      setFormError(
+        language === 'RU'
+          ? 'Сервер временно недоступен. Попробуйте снова.'
+          : 'Game server is currently unreachable. Please try again.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -231,21 +246,35 @@ function AuthModal({
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const result = await response.json() as {
-        success?: boolean;
-        data?: { token: string; user: { id: number; name: string; surname: string; email: string } };
-        error?: { message?: string; details?: ApiErrorDetails };
-      };
 
-      if (!response.ok || !result.success || !result.data?.token) {
-        setFormError(result.error?.message ?? (language === 'RU' ? 'Неверный email или пароль.' : 'Invalid email or password.'));
-        setFieldErrors(result.error?.details ?? {});
+      const isJson = response.headers.get('content-type')?.includes('application/json');
+      const result = isJson
+        ? (await response.json() as {
+            success?: boolean;
+            data?: { token: string; user: { id: number; name: string; surname: string; email: string } };
+            error?: { message?: string; details?: ApiErrorDetails };
+          })
+        : null;
+
+      if (!response.ok || !result?.success || !result?.data?.token) {
+        setFormError(
+          result?.error?.message ??
+            (language === 'RU'
+              ? `Ошибка сервера (${response.status} ${response.statusText}).`
+              : `Server error (${response.status} ${response.statusText}).`),
+        );
+        setFieldErrors(result?.error?.details ?? {});
         return;
       }
 
       onAuthSuccess(result.data.token, result.data.user);
-    } catch {
-      setFormError(language === 'RU' ? 'Сервер временно недоступен. Попробуйте снова.' : 'Game server is currently unreachable. Please try again.');
+    } catch (err) {
+      console.error('Login error:', err);
+      setFormError(
+        language === 'RU'
+          ? 'Сервер временно недоступен. Попробуйте снова.'
+          : 'Game server is currently unreachable. Please try again.',
+      );
     } finally {
       setIsSubmitting(false);
     }

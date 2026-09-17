@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+backend/.env
+backend/vendor/
+*.sqlite
+*.sqlite-journal
+.phpunit.result.cache
+.DS_Store

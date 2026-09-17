@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Crazy Defense Heroes</title>
+    <title>Welcome to Crazy Defense Hereoes</title>
     <style>
         body { margin: 0; padding: 0; background-color: #f6f2da; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #4c3a2e; }
         .wrapper { width: 100%; max-width: 600px; margin: 0 auto; padding: 30px 15px; }
@@ -31,7 +31,7 @@
         <div class="card">
             <div class="header">
                 <div class="eyebrow">✦ REALM WATCH INITIALIZED ✦</div>
-                <div class="brand">CRAZY DEFENSE <span>HEROES</span></div>
+                <div class="brand">CRAZY DEFENSE <span>HEREOES</span></div>
             </div>
 
             <h1>Welcome to the watch, {{ $user->name }}!</h1>
@@ -54,11 +54,11 @@
             <p style="font-size: 12px; color: #887a64; text-align: center;">Need assistance? Contact our dispatchers at <a href="mailto:{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}" style="color: #df5e29;">{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}</a>.</p>
 
             <div class="footer">
-                <p><strong>{{ $company['name'] ?? 'Crazy Defense Heroes Ltd' }}</strong></p>
+                <p><strong>{{ $company['name'] ?? 'Crazy Defense Hereoes Ltd' }}</strong></p>
                 <p>Company Registration No: <strong>{{ $company['number'] ?? '14892341' }}</strong></p>
                 <p>Registered Address: {{ $company['address'] ?? '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom' }}</p>
                 <p>Email: <a href="mailto:{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}">{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}</a> · Website: <a href="https://{{ $company['domain'] ?? 'crazydefensehereoes.co.uk' }}">{{ $company['domain'] ?? 'crazydefensehereoes.co.uk' }}</a></p>
-                <p>© {{ date('Y') }} {{ $company['name'] ?? 'Crazy Defense Heroes Ltd' }}. All rights reserved.</p>
+                <p>© {{ date('Y') }} {{ $company['name'] ?? 'Crazy Defense Hereoes Ltd' }}. All rights reserved.</p>
             </div>
         </div>
     </div>

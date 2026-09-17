@@ -28,7 +28,7 @@ class VerifyEmailNotification extends Notification
         );
 
         return (new MailMessage)
-            ->subject('Verify your Crazy Defense Heroes account')
+            ->subject('Verify your Crazy Defense Hereoes account')
             ->greeting('Welcome to the watch, '.$notifiable->name.'!')
             ->line('Verify your email address to protect your account and save your game progress.')
             ->action('Verify email address', $verificationUrl)

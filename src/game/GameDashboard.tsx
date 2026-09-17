@@ -366,7 +366,7 @@ export function GameDashboard({
           </button>
           <div className="arena-title">
             <span className="arena-badge">ARENA</span>
-            <h2>Crazy Defense Heroes</h2>
+            <h2>Crazy Defense Hereoes</h2>
           </div>
         </div>
 

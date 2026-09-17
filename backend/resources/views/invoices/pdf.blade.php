@@ -61,6 +61,6 @@
         <tr class="grand"><td>Total</td><td class="right">{{ number_format($invoice->total_minor / 100, 2, '.', '') }} {{ $invoice->currency }}</td></tr>
     </table>
 
-    <div class="footer">Thank you for supporting Crazy Defense Heroes. Digital goods are delivered to the account shown above.</div>
+    <div class="footer">Thank you for supporting Crazy Defense Hereoes. Digital goods are delivered to the account shown above.</div>
 </body>
 </html>

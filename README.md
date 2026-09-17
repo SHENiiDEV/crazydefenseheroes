@@ -1,4 +1,4 @@
-# Crazy Defense Heroes
+# Crazy Defense Hereoes
 
 Первый инкремент лендинга игры: React + Vite + TypeScript в strict-режиме.
 

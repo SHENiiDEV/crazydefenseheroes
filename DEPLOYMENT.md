@@ -1,4 +1,4 @@
-# Crazy Defense Heroes - deployment checklist
+# Crazy Defense Hereoes - deployment checklist
 
 ## Before deployment
 

@@ -1,4 +1,4 @@
-# Crazy Defense Heroes — план реализации
+# Crazy Defense Hereoes — план реализации
 
 ## Как трактуем исходный запрос
 

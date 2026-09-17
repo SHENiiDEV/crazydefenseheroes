@@ -74,7 +74,7 @@ const fallbackCountries = [
 ];
 
 const legalCopy = {
-  terms: 'By playing Crazy Defense Heroes, you agree to use the service lawfully, keep your account secure, and treat other players fairly. Purchases are made by the account holder and digital items have no cash value outside the service.',
+  terms: 'By playing Crazy Defense Hereoes, you agree to use the service lawfully, keep your account secure, and treat other players fairly. Purchases are made by the account holder and digital items have no cash value outside the service.',
   privacy: 'We use the details you provide to create your account, deliver receipts, protect the game, and answer support requests. We do not sell personal information.',
 };
 
@@ -431,7 +431,7 @@ export function App() {
       <div className="cloud cloud-one" /><div className="cloud cloud-two" />
 
       <nav className="topbar" aria-label="Main navigation">
-        <a className="brand" href="#top" aria-label="Crazy Defense Heroes home"><ShieldMark /><span>CDH<span className="brand-dot">.</span></span></a>
+        <a className="brand" href="#top" aria-label="Crazy Defense Hereoes home"><ShieldMark /><span>CDH<span className="brand-dot">.</span></span></a>
         <div className="nav-links">
           <a href="#vault">{language === 'RU' ? 'Сундуки' : 'Chest sale'}</a>
           <a href="#roster">{language === 'RU' ? 'Башни' : 'Get tower'}</a>
@@ -481,7 +481,7 @@ export function App() {
       <section className="hero" id="top">
         <div className="hero-copy">
           <p className="eyebrow"><span className="eyebrow-line" /> {language === 'RU' ? 'Играй · Зарабатывай · Побеждай' : 'Play · Earn · Enjoy'} <span className="eyebrow-line" /></p>
-          <h1><span>Crazy</span> <em>Defense</em> <strong>Heroes</strong></h1>
+          <h1><span>Crazy</span> <em>Defense</em> <strong>Hereoes</strong></h1>
           <p className="hero-subtitle">
             {language === 'RU'
               ? <>Постройте непреодолимую крепость. Перехитрите орду.<br />Стража никогда не спит.</>
@@ -654,7 +654,7 @@ export function App() {
           <div className="footer-grid">
             {/* Column 1: Brand & Lore */}
             <div className="footer-col footer-col-brand">
-              <a className="brand footer-brand" href="#top" aria-label="Crazy Defense Heroes home">
+              <a className="brand footer-brand" href="#top" aria-label="Crazy Defense Hereoes home">
                 <ShieldMark />
                 <span>CDH<span className="brand-dot">.</span></span>
               </a>
@@ -664,7 +664,7 @@ export function App() {
                   : 'Next-generation tactical tower defense. Erect the impossible fortress, unlock legendary chests, and defend against the endless tide.'}
               </p>
               <div className="footer-company-brief">
-                <span><b>Crazy Defense Heroes Ltd</b></span>
+                <span><b>Crazy Defense Hereoes Ltd</b></span>
                 <small>Reg. No: 14892341</small>
                 <small>71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, UK</small>
               </div>
@@ -751,13 +751,13 @@ export function App() {
             {/* Column 4: Legal & Policies */}
             <div className="footer-col">
               <h4 className="footer-heading">
-                {language === 'RU' ? 'ПРАВОВАЯ ИНФОРМАЦИЯ' : 'LEGAL CODEX'}
+                {language === 'RU' ? 'ПРАВОВАЯ ИНФОРМАЦИЯ' : 'LEGAL & TRUST'}
               </h4>
-              <ul className="footer-links">
+              <ul className="footer-links-list">
                 <li>
                   <button type="button" className="footer-link-btn" onClick={() => setLegalModalTab('terms')}>
                     <i className="fa-solid fa-scroll" style={{ marginRight: 6 }} />
-                    {language === 'RU' ? 'Условия обслуживания' : 'Terms & Conditions'}
+                    {language === 'RU' ? 'Пользовательское соглашение' : 'Terms of Service'}
                   </button>
                 </li>
                 <li>
@@ -796,7 +796,7 @@ export function App() {
 
           <div className="footer-bottom-bar">
             <div className="footer-bottom-copy">
-              © 2026 Crazy Defense Heroes Ltd (Company No. 14892341). {language === 'RU' ? 'Все права защищены.' : 'All rights reserved.'} · 71-75 Shelton Street, London, WC2H 9JQ, UK
+              © 2026 Crazy Defense Hereoes Ltd (Company No. 14892341). {language === 'RU' ? 'Все права защищены.' : 'All rights reserved.'} · 71-75 Shelton Street, London, WC2H 9JQ, UK
             </div>
             <div className="footer-bottom-tags">
               <span className="footer-tag">GDPR COMPLIANT</span>

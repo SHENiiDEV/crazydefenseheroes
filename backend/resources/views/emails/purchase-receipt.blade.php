@@ -15,15 +15,15 @@
 <body>
     <div class="card">
         <div class="header">
-            <div class="brand">CRAZY DEFENSE <span>HEROES</span></div>
+            <div class="brand">CRAZY DEFENSE <span>HEREOES</span></div>
         </div>
         <p>Hello {{ $invoice->user->name }},</p>
-        <p>Thank you for your Crazy Defense Heroes purchase. Your official fiscal receipt is attached as a PDF.</p>
+        <p>Thank you for your Crazy Defense Hereoes purchase. Your official fiscal receipt is attached as a PDF.</p>
         <p><strong>Invoice:</strong> {{ $invoice->invoice_number }}<br>
         <strong>Total:</strong> {{ number_format($invoice->total_minor / 100, 2, '.', '') }} {{ $invoice->currency }}</p>
         <p>Keep this confirmation for your records.</p>
         <div class="footer">
-            <p><strong>{{ config('company.name', 'Crazy Defense Heroes Ltd') }}</strong></p>
+            <p><strong>{{ config('company.name', 'Crazy Defense Hereoes Ltd') }}</strong></p>
             <p>Registration No: <strong>{{ config('company.number', '14892341') }}</strong></p>
             <p>Address: {{ config('company.address', '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom') }}</p>
             <p>Support: <a href="mailto:{{ config('company.email', 'info@crazydefensehereoes.co.uk') }}">{{ config('company.email', 'info@crazydefensehereoes.co.uk') }}</a> · <a href="https://{{ config('company.domain', 'crazydefensehereoes.co.uk') }}">{{ config('company.domain', 'crazydefensehereoes.co.uk') }}</a></p>

@@ -29,7 +29,7 @@
         <div class="card">
             <div class="header">
                 <div class="eyebrow">✦ TREASURY TRANSACTION RECEIPT ✦</div>
-                <div class="brand">CRAZY DEFENSE <span>HEROES</span></div>
+                <div class="brand">CRAZY DEFENSE <span>HEREOES</span></div>
             </div>
 
             <h1>Payment Confirmation, {{ $user->name }}!</h1>
@@ -62,11 +62,11 @@
             <p style="font-size: 12px; color: #887a64; text-align: center;">Transaction processed securely with 256-bit SSL encryption. Retain this confirmation for your records.</p>
 
             <div class="footer">
-                <p><strong>{{ $company['name'] ?? 'Crazy Defense Heroes Ltd' }}</strong></p>
+                <p><strong>{{ $company['name'] ?? 'Crazy Defense Hereoes Ltd' }}</strong></p>
                 <p>Company Registration No: <strong>{{ $company['number'] ?? '14892341' }}</strong></p>
                 <p>Registered Address: {{ $company['address'] ?? '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom' }}</p>
                 <p>Email: <a href="mailto:{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}">{{ $company['email'] ?? 'info@crazydefensehereoes.co.uk' }}</a> · Website: <a href="https://{{ $company['domain'] ?? 'crazydefensehereoes.co.uk' }}">{{ $company['domain'] ?? 'crazydefensehereoes.co.uk' }}</a></p>
-                <p>© {{ date('Y') }} {{ $company['name'] ?? 'Crazy Defense Heroes Ltd' }}. All rights reserved.</p>
+                <p>© {{ date('Y') }} {{ $company['name'] ?? 'Crazy Defense Hereoes Ltd' }}. All rights reserved.</p>
             </div>
         </div>
     </div>

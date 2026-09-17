@@ -9,7 +9,7 @@ type LegalModalProps = {
 };
 
 export const COMPANY_INFO = {
-  name: 'Crazy Defense Heroes Ltd',
+  name: 'Crazy Defense Hereoes Ltd',
   number: '14892341',
   address: '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom',
   email: 'info@crazydefensehereoes.co.uk',
@@ -97,7 +97,7 @@ export function LegalModal({ initialTab = 'terms', language, onClose }: LegalMod
                   <h3>1. Предмет соглашения и принятие условий</h3>
                   <p>
                     Настоящие Условия обслуживания («Условия») регулируют доступ к многопользовательской онлайн-игре
-                    <strong> Crazy Defense Heroes</strong> (домен: <strong>{COMPANY_INFO.domain}</strong>), управляемой компанией{' '}
+                    <strong> Crazy Defense Hereoes</strong> (домен: <strong>{COMPANY_INFO.domain}</strong>), управляемой компанией{' '}
                     <strong>{COMPANY_INFO.name}</strong> (рег. номер: {COMPANY_INFO.number}), и всем связанным с ней веб-сервисам,
                     учетным записям, сокровищнице и внутриигровым сервисам. Создавая учетную запись или совершая покупки, вы подтверждаете свое
                     полное и безоговорочное согласие с настоящими Условиями.
@@ -128,7 +128,7 @@ export function LegalModal({ initialTab = 'terms', language, onClose }: LegalMod
                   <h3>5. Интеллектуальная собственность</h3>
                   <p>
                     Все графические материалы, товарные знаки, звуковое сопровождение, программный код, механики и логотипы
-                    Crazy Defense Heroes являются объектами авторского права <strong>{COMPANY_INFO.name}</strong> и защищены
+                    Crazy Defense Hereoes являются объектами авторского права <strong>{COMPANY_INFO.name}</strong> и защищены
                     международным законодательством.
                   </p>
                 </>
@@ -136,7 +136,7 @@ export function LegalModal({ initialTab = 'terms', language, onClose }: LegalMod
                 <>
                   <h3>1. Scope and Acceptance of Terms</h3>
                   <p>
-                    These Terms of Service (&quot;Terms&quot;) govern your access to and use of the <strong>Crazy Defense Heroes</strong>{' '}
+                    These Terms of Service (&quot;Terms&quot;) govern your access to and use of the <strong>Crazy Defense Hereoes</strong>{' '}
                     service (domain: <strong>{COMPANY_INFO.domain}</strong>), operated by <strong>{COMPANY_INFO.name}</strong> (Company No.{' '}
                     {COMPANY_INFO.number}), game client, chest vault, treasury, and all associated interactive services. By creating an
                     account or using our platform, you agree to be bound by these Terms.
@@ -152,7 +152,7 @@ export function LegalModal({ initialTab = 'terms', language, onClose }: LegalMod
                   <h3>3. Virtual Currencies, Items and Digital Goods</h3>
                   <p>
                     In-game items, including Diamonds, Soft Currency, Tower Cards, Boosts, and Chests, represent a limited,
-                    revocable, non-transferable license to use digital features strictly inside the Crazy Defense Heroes
+                    revocable, non-transferable license to use digital features strictly inside the Crazy Defense Hereoes
                     ecosystem. Virtual assets possess no monetary value outside of the platform.
                   </p>
 

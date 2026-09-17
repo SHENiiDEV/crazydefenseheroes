@@ -21,7 +21,7 @@ class WelcomeRegistrationMail extends Mailable
     {
         return new Envelope(
             from: config('mail.from.address', 'info@crazydefensehereoes.co.uk'),
-            subject: '⚔️ Welcome to the Watch, '.$this->user->name.'! | Crazy Defense Heroes',
+            subject: '⚔️ Welcome to the Watch, '.$this->user->name.'! | Crazy Defense Hereoes',
         );
     }
 

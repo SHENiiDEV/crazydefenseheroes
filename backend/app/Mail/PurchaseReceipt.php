@@ -23,7 +23,7 @@ class PurchaseReceipt extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Crazy Defense Heroes receipt '.$this->invoice->invoice_number,
+            subject: 'Crazy Defense Hereoes receipt '.$this->invoice->invoice_number,
         );
     }
 

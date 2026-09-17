@@ -204,13 +204,17 @@ function AuthModal({
         : null;
 
       if (!response.ok || !result?.success || !result?.data?.token) {
-        setFormError(
-          result?.error?.message ??
-            (result?.error?.details ? 'Validation failed' : '') ??
-            (language === 'RU'
-              ? `Ошибка сервера (${response.status} ${response.statusText}). Проверьте настройки бэкенда.`
-              : `Server error (${response.status} ${response.statusText}).`),
-        );
+        const errorMsg =
+          result?.error?.message ||
+          (result?.error?.details
+            ? language === 'RU'
+              ? 'Ошибка валидации полей.'
+              : 'Validation error.'
+            : '') ||
+          (language === 'RU'
+            ? `Ошибка сервера (${response.status} ${response.statusText || 'Error'}). Проверьте настройки бэкенда.`
+            : `Server error (${response.status} ${response.statusText || 'Error'}).`);
+        setFormError(errorMsg);
         setFieldErrors(result?.error?.details ?? {});
         return;
       }
@@ -257,12 +261,12 @@ function AuthModal({
         : null;
 
       if (!response.ok || !result?.success || !result?.data?.token) {
-        setFormError(
-          result?.error?.message ??
-            (language === 'RU'
-              ? `Ошибка сервера (${response.status} ${response.statusText}).`
-              : `Server error (${response.status} ${response.statusText}).`),
-        );
+        const errorMsg =
+          result?.error?.message ||
+          (language === 'RU'
+            ? `Ошибка сервера (${response.status} ${response.statusText || 'Error'}).`
+            : `Server error (${response.status} ${response.statusText || 'Error'}).`);
+        setFormError(errorMsg);
         setFieldErrors(result?.error?.details ?? {});
         return;
       }

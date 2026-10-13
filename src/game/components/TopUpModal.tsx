@@ -3,7 +3,6 @@ import { PlayerState, topupWalletApi } from '../../lib/api';
 
 type TopUpModalProps = {
   player: PlayerState;
-  language: 'EN' | 'RU';
   onClose: () => void;
   onUpdatePlayer: (updater: (prev: PlayerState) => PlayerState) => void;
   onSuccessNotice: (msg: string) => void;
@@ -91,11 +90,11 @@ const COIN_EXCHANGES: CoinExchange[] = [
 
 export function TopUpModal({
   player,
-  language,
   onClose,
   onUpdatePlayer,
   onSuccessNotice,
 }: TopUpModalProps) {
+  const language: string = 'EN';
   const [activeSubTab, setActiveSubTab] = useState<'diamonds' | 'coins'>('diamonds');
   const [loadingPkg, setLoadingPkg] = useState<string | null>(null);
 

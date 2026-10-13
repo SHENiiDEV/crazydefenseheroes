@@ -118,16 +118,15 @@ function Figure({ side, type }: { side: 'left' | 'right'; type: 'ranger' | 'mage
 }
 
 function AuthModal({
-  language,
   initialTab = 'register',
   onClose,
   onAuthSuccess,
 }: {
-  language: string;
   initialTab?: AuthTab;
   onClose: () => void;
   onAuthSuccess: (token: string, user: { id: number; name: string; surname: string; email: string }) => void;
 }) {
+  const language: string = 'EN';
   const [tab, setTab] = useState<AuthTab>(initialTab);
   const [availableCountries, setAvailableCountries] = useState(fallbackCountries);
   const [countriesLoading, setCountriesLoading] = useState(true);
@@ -381,8 +380,8 @@ function AuthModal({
 }
 
 export function App() {
+  const language: string = 'EN';
   const [activeChest, setActiveChest] = useState<ChestId>('gold');
-  const [language, setLanguage] = useState<'EN' | 'RU'>('EN');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authInitialTab, setAuthInitialTab] = useState<AuthTab>('register');
   const [legalModalTab, setLegalModalTab] = useState<LegalDocType | null>(null);
@@ -453,11 +452,9 @@ export function App() {
     return (
       <GameDashboard
         player={player}
-        language={language}
         onUpdatePlayer={(updater) => setPlayer((prev) => (prev ? updater(prev) : null))}
         onBackToLanding={() => setCurrentView('landing')}
         onLogout={handleLogout}
-        onToggleLanguage={() => setLanguage((l) => (l === 'EN' ? 'RU' : 'EN'))}
       />
     );
   }
@@ -479,7 +476,6 @@ export function App() {
           <a href="#roster">{language === 'RU' ? 'Башни' : 'Get tower'}</a>
           <a href="#arsenal">{language === 'RU' ? 'Арсенал' : 'Inventory'}</a>
           <a href="#demo">{language === 'RU' ? 'Играть' : 'Play demo'}</a>
-          <button className="language-button" onClick={() => setLanguage(language === 'EN' ? 'RU' : 'EN')}>Language <span>{language}</span>⌄</button>
         </div>
 
         {player ? (
@@ -851,7 +847,6 @@ export function App() {
 
       {authModalOpen && (
         <AuthModal
-          language={language}
           initialTab={authInitialTab}
           onClose={() => setAuthModalOpen(false)}
           onAuthSuccess={handleAuthSuccess}
@@ -860,7 +855,6 @@ export function App() {
       {showTopUp && player && (
         <TopUpModal
           player={player}
-          language={language}
           onClose={() => setShowTopUp(false)}
           onUpdatePlayer={(updater) => setPlayer((prev) => (prev ? updater(prev) : null))}
           onSuccessNotice={showNotice}
@@ -869,7 +863,6 @@ export function App() {
       {legalModalTab && (
         <LegalModal
           initialTab={legalModalTab}
-          language={language}
           company={company}
           onClose={() => setLegalModalTab(null)}
         />

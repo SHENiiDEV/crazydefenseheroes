@@ -5,7 +5,6 @@ export type LegalDocType = 'terms' | 'privacy' | 'refunds' | 'security';
 
 type LegalModalProps = {
   initialTab?: LegalDocType;
-  language: 'EN' | 'RU';
   company?: CompanyInfo;
   onClose: () => void;
 };
@@ -18,7 +17,8 @@ export const DEFAULT_COMPANY_INFO: CompanyInfo = {
   domain: 'crazydefensehereoes.co.uk',
 };
 
-export function LegalModal({ initialTab = 'terms', language, company = DEFAULT_COMPANY_INFO, onClose }: LegalModalProps) {
+export function LegalModal({ initialTab = 'terms', company = DEFAULT_COMPANY_INFO, onClose }: LegalModalProps) {
+  const language: string = 'EN';
   const COMPANY_INFO = company;
   const [activeTab, setActiveTab] = useState<LegalDocType>(initialTab);
 

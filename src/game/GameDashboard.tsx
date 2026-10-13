@@ -120,19 +120,16 @@ type LootResult = {
 
 export function GameDashboard({
   player,
-  language,
   onUpdatePlayer,
   onBackToLanding,
   onLogout,
-  onToggleLanguage,
 }: {
   player: PlayerState;
-  language: 'EN' | 'RU';
   onUpdatePlayer: (updater: (prev: PlayerState) => PlayerState) => void;
   onBackToLanding: () => void;
   onLogout: () => void;
-  onToggleLanguage: () => void;
 }) {
+  const language: string = 'EN';
   const [activeTab, setActiveTab] = useState<Tab>('battle');
   const [isManualPaused, setIsManualPaused] = useState(false);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
@@ -402,9 +399,6 @@ export function GameDashboard({
             </div>
           </div>
 
-          <button className="language-button arena-lang-btn" onClick={onToggleLanguage}>
-            {language} <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.75em', marginLeft: 4 }} />
-          </button>
 
           <button className="button-logout" onClick={onLogout}>
             <i className="fa-solid fa-arrow-right-from-bracket" style={{ marginRight: 6 }} />
@@ -824,7 +818,6 @@ export function GameDashboard({
       {showTopUp && (
         <TopUpModal
           player={player}
-          language={language}
           onClose={() => setShowTopUp(false)}
           onUpdatePlayer={onUpdatePlayer}
           onSuccessNotice={showFeedback}

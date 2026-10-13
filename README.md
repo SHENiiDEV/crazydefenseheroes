@@ -15,6 +15,9 @@ Production-проверка:
 npm run build
 ```
 
+В production фронтенд должен использовать same-origin API: `VITE_API_BASE_URL=/api/v1`.
+Для локального запуска с отдельным Laravel-сервером этот адрес можно переопределить в `.env` на `http://127.0.0.1:8001/api/v1`.
+
 ## Laravel 13 backend
 
 Backend находится в [backend/](/Users/mihailssegins/Documents/ChatGPT/tower-defense/backend) и создан на Laravel 13.

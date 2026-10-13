@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { GameCanvas } from './game/GameCanvas';
 import { GameDashboard } from './game/GameDashboard';
-import { getPlayerState, PlayerState } from './lib/api';
-import { LegalModal, LegalDocType } from './game/components/LegalModal';
+import { CompanyInfo, getCompanyInfo, getPlayerState, PlayerState } from './lib/api';
+import { DEFAULT_COMPANY_INFO, LegalModal, LegalDocType } from './game/components/LegalModal';
 import { TopUpModal } from './game/components/TopUpModal';
 
 type ChestId = 'silver' | 'gold' | 'bronze';
@@ -389,6 +389,7 @@ export function App() {
   const [showTopUp, setShowTopUp] = useState(false);
   const [notice, setNotice] = useState('');
   const [player, setPlayer] = useState<PlayerState | null>(null);
+  const [company, setCompany] = useState<CompanyInfo>(DEFAULT_COMPANY_INFO);
   const [currentView, setCurrentView] = useState<'landing' | 'game'>('landing');
 
   const active = chests.find((chest) => chest.id === activeChest) ?? chests[1];
@@ -397,6 +398,14 @@ export function App() {
     setNotice(message);
     window.setTimeout(() => setNotice(''), 3000);
   };
+
+  useEffect(() => {
+    getCompanyInfo()
+      .then(setCompany)
+      .catch(() => {
+        // Keep the client fallback if the API is temporarily unavailable.
+      });
+  }, []);
 
   useEffect(() => {
     const token = window.localStorage.getItem('cdh.token');
@@ -697,9 +706,9 @@ export function App() {
                   : 'Next-generation tactical tower defense. Erect the impossible fortress, unlock legendary chests, and defend against the endless tide.'}
               </p>
               <div className="footer-company-brief">
-                <span><b>Crazy Defense Hereoes Ltd</b></span>
-                <small>Reg. No: 14892341</small>
-                <small>71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, UK</small>
+                <span><b>{company.name}</b></span>
+                <small>Reg. No: {company.number}</small>
+                <small>{company.address}</small>
               </div>
               <div className="footer-realm-status">
                 <span className="live-dot" />
@@ -814,13 +823,13 @@ export function App() {
                 <li>
                   <span className="footer-contact-item">
                     <i className="fa-solid fa-envelope" style={{ marginRight: 6, color: '#df5e29' }} />
-                    <a href="mailto:info@crazydefensehereoes.co.uk">info@crazydefensehereoes.co.uk</a>
+                    <a href={`mailto:${company.email}`}>{company.email}</a>
                   </span>
                 </li>
                 <li>
                   <span className="footer-contact-item">
                     <i className="fa-solid fa-globe" style={{ marginRight: 6, color: '#df5e29' }} />
-                    <a href="https://crazydefensehereoes.co.uk" target="_blank" rel="noreferrer">crazydefensehereoes.co.uk</a>
+                    <a href={`https://${company.domain}`} target="_blank" rel="noreferrer">{company.domain}</a>
                   </span>
                 </li>
               </ul>
@@ -829,7 +838,7 @@ export function App() {
 
           <div className="footer-bottom-bar">
             <div className="footer-bottom-copy">
-              © 2026 Crazy Defense Hereoes Ltd (Company No. 14892341). {language === 'RU' ? 'Все права защищены.' : 'All rights reserved.'} · 71-75 Shelton Street, London, WC2H 9JQ, UK
+              © 2026 {company.name} (Company No. {company.number}). {language === 'RU' ? 'Все права защищены.' : 'All rights reserved.'} · {company.address}
             </div>
             <div className="footer-bottom-tags">
               <span className="footer-tag">GDPR COMPLIANT</span>
@@ -861,6 +870,7 @@ export function App() {
         <LegalModal
           initialTab={legalModalTab}
           language={language}
+          company={company}
           onClose={() => setLegalModalTab(null)}
         />
       )}

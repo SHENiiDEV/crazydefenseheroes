@@ -1,22 +1,25 @@
 import { useState } from 'react';
+import type { CompanyInfo } from '../../lib/api';
 
 export type LegalDocType = 'terms' | 'privacy' | 'refunds' | 'security';
 
 type LegalModalProps = {
   initialTab?: LegalDocType;
   language: 'EN' | 'RU';
+  company?: CompanyInfo;
   onClose: () => void;
 };
 
-export const COMPANY_INFO = {
-  name: 'Crazy Defense Hereoes Ltd',
-  number: '14892341',
-  address: '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom',
+export const DEFAULT_COMPANY_INFO: CompanyInfo = {
+  name: 'PROTECT YOUR ASSETS TODAY LTD',
+  number: '15969857',
+  address: 'Academy House, 11 Dunraven Place, Bridgend, Mid Glamorgan, CF31 1JF',
   email: 'info@crazydefensehereoes.co.uk',
   domain: 'crazydefensehereoes.co.uk',
 };
 
-export function LegalModal({ initialTab = 'terms', language, onClose }: LegalModalProps) {
+export function LegalModal({ initialTab = 'terms', language, company = DEFAULT_COMPANY_INFO, onClose }: LegalModalProps) {
+  const COMPANY_INFO = company;
   const [activeTab, setActiveTab] = useState<LegalDocType>(initialTab);
 
   return (

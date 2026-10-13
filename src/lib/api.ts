@@ -1,5 +1,13 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 
+export type CompanyInfo = {
+  name: string;
+  number: string;
+  address: string;
+  email: string;
+  domain: string;
+};
+
 export type PlayerState = {
   user: {
     id: number;
@@ -121,6 +129,19 @@ type ApiEnvelope<T> = {
     details: Record<string, string[]> | null;
   };
 };
+
+export async function getCompanyInfo(): Promise<CompanyInfo> {
+  const response = await fetch(API_BASE_URL + '/company', {
+    headers: { Accept: 'application/json' },
+  });
+  const payload = await response.json() as ApiEnvelope<CompanyInfo>;
+
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.error?.message ?? 'Company information could not be loaded.');
+  }
+
+  return payload.data;
+}
 
 export async function getPlayerState(token: string): Promise<PlayerState> {
   const response = await fetch(API_BASE_URL + '/me', {

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\PlayerStateController;
 use App\Http\Controllers\Api\V1\RegisterController;
+use App\Http\Controllers\Api\V1\TopUpController;
 use App\Http\Controllers\Api\V1\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,7 +41,9 @@ Route::prefix('v1')->group(function (): void {
         Route::put('/me/loadout', [PlayerStateController::class, 'updateLoadout'])->name('api.v1.me.loadout');
         Route::post('/me/towers/upgrade', [PlayerStateController::class, 'upgradeTower'])->name('api.v1.me.towers.upgrade');
         Route::post('/me/chests/open', [PlayerStateController::class, 'openChest'])->name('api.v1.me.chests.open');
-        Route::post('/me/wallet/topup', [PlayerStateController::class, 'topup'])->name('api.v1.me.wallet.topup');
+        Route::get('/me/topup', [TopUpController::class, 'show'])->name('api.v1.me.topup');
+        Route::post('/me/topup', [TopUpController::class, 'store'])->name('api.v1.me.topup.store');
+        Route::post('/me/wallet/topup', [TopUpController::class, 'retired'])->name('api.v1.me.wallet.topup');
         Route::get('/me/game/progress', [EndlessProgressController::class, 'show'])->name('api.v1.me.game.progress');
         Route::post('/me/game/checkpoints', [EndlessProgressController::class, 'checkpoint'])->name('api.v1.me.game.checkpoints');
         Route::get('/me/orders', [OrderController::class, 'index'])->name('api.v1.me.orders');

@@ -1727,3 +1727,47 @@ h1 span { color: #77563e; } h1 em { color: #b84d2e; } h1 strong { color: #4c3a2e
   .legal-scroll-body { padding: 14px 16px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* Treasury: a requisition ledger beside two open currency compartments. */
+.treasury-page { color: #4c3a2e; padding: 18px 0 48px; }
+.treasury-heading { display: flex; justify-content: space-between; align-items: center; gap: 32px; margin-bottom: 34px; }
+.treasury-heading h1 { font: 600 clamp(2.6rem, 5vw, 4.6rem)/1.04 'Fraunces', Georgia, serif; letter-spacing: -.045em; margin: 14px 0 20px; text-transform: none; }
+.treasury-heading h1 em { color: #b84d2e; font-weight: 500; }
+.treasury-heading p:not(.eyebrow) { max-width: 470px; color: #756852; line-height: 1.6; }
+.treasury-balances { display: flex; gap: 28px; padding: 24px; border-left: 2px solid #cdb58b; }
+.treasury-balances > span { display: grid; grid-template-columns: 26px 1fr; gap: 8px; }
+.treasury-balances i { grid-row: span 2; color: #2980b9; margin-top: 4px; }
+.treasury-balances > span:last-child i { color: #ad7e26; }
+.treasury-balances small, .treasury-order-label { font: 10px 'DM Mono', monospace; letter-spacing: .1em; }
+.treasury-balances strong { font: 600 1.7rem 'Fraunces', Georgia, serif; overflow-wrap: anywhere; }
+.treasury-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .65fr); gap: 28px; align-items: start; }
+.treasury-amounts { display: grid; gap: 24px; min-width: 0; }
+.treasury-currency { margin: 0; min-width: 0; padding: 24px 28px 28px; border: 2px solid #aabbb9; background: linear-gradient(120deg, #f7faf1, #e2eeea); box-shadow: 4px 5px 0 #aabbb947; }
+.treasury-gold { border-color: #cdb58b; background: linear-gradient(120deg, #fff9e6, #f1e2b9); box-shadow: 4px 5px 0 #cdb58b47; }
+.treasury-currency legend { padding: 0 12px; font: 600 1.5rem 'Fraunces', Georgia, serif; }
+.treasury-diamonds legend i { color: #2980b9; }.treasury-gold legend i { color: #ad7e26; }
+.treasury-currency > p { margin: 0 0 20px; color: #756852; font-size: .85rem; }
+.treasury-currency label { display: block; font: 11px 'DM Mono', monospace; margin-bottom: 10px; }
+.treasury-currency input { display: block; width: 100%; box-sizing: border-box; min-height: 70px; border: 1px solid #ada58e; background: #fffdf3; padding: 12px 18px; font: 600 clamp(1.6rem, 5vw, 2.3rem) 'Fraunces', Georgia, serif; color: #4c3a2e; border-radius: 3px; }
+.treasury-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.treasury-presets button { padding: 8px 12px; border: 1px solid #b6af99; border-radius: 3px; background: #fffdf399; color: #4c3a2e; font: 11px 'DM Mono', monospace; cursor: pointer; min-height: 36px; }
+.treasury-presets button:hover { background: #fffdf3; border-color: #a56f40; }
+.treasury-currency > small { color: #756852; font-size: 11px; line-height: 1.5; }
+.treasury-summary { position: sticky; top: 24px; min-width: 0; padding: 30px; border: 3px solid #8b6743; border-top-width: 8px; background: #fdf6e3; box-shadow: 6px 7px 0 #4c3a2e16; }
+.treasury-summary h2 { font: 600 1.8rem/1.2 'Fraunces', Georgia, serif; margin: 18px 0 26px; }
+.treasury-summary dl { margin: 0; }.treasury-summary dl > div { display: flex; justify-content: space-between; gap: 16px; margin: 16px 0; }.treasury-summary dd { margin: 0; font-family: 'DM Mono', monospace; }
+.treasury-summary .treasury-total { border-top: 1px dashed #b5a488; padding-top: 22px; margin-top: 24px; font-weight: 700; align-items: center; }.treasury-total dd { font-size: 1.6rem; }
+.treasury-mode { background: #e9e2ce; padding: 14px; font-size: 12px; line-height: 1.6; }.treasury-mode b { display: block; margin-bottom: 4px; }
+.treasury-receipt-note { font-size: 12px; line-height: 1.6; color: #756852; overflow-wrap: anywhere; }
+.treasury-summary .button { width: 100%; padding: 18px 12px; margin: 12px 0; }.treasury-summary > small { display: block; color: #756852; font-size: 10px; }
+.treasury-page button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.treasury-message { padding: 16px 20px; border: 1px solid; border-radius: 3px; line-height: 1.5; }.treasury-error { background: #fae5dc; border-color: #b84d2e; color: #84351e; }.treasury-success { background: #e7efe0; border-color: #65895d; color: #3f6337; }
+.treasury-history { margin-top: 48px; border-top: 2px solid #cdb58b; padding-top: 30px; }.treasury-history > header { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 22px; }.treasury-history h2 { font: 600 1.7rem 'Fraunces', Georgia, serif; margin: 8px 0; }.treasury-history header .button { padding: 12px 16px; font-size: 11px; }
+.treasury-history ul { list-style: none; padding: 0; margin: 0; }.treasury-history li { display: grid; grid-template-columns: minmax(0, 1fr) 110px 130px 130px; gap: 20px; padding: 22px 0; border-bottom: 1px solid #d9ceb5; align-items: center; }.treasury-history li > div strong { display: block; overflow-wrap: anywhere; }.treasury-history small { display: block; margin-top: 7px; font-size: 11px; color: #756852; }.treasury-history li > span { font-size: 13px; }.treasury-order-status { color: #516e47; }
+.treasury-download { background: transparent; color: #9d492a; border: 1px solid #bda98b; border-radius: 3px; padding: 10px; cursor: pointer; font-size: 12px; }
+@media (max-width: 900px) { .treasury-heading { align-items: start; flex-direction: column; }.treasury-balances { border-left: 0; border-bottom: 2px solid #cdb58b; padding: 0 0 20px; width: 100%; box-sizing: border-box; }.treasury-layout { grid-template-columns: minmax(0, 1fr); }.treasury-summary { position: static; }.treasury-history li { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }.treasury-download { justify-self: end; } }
+@media (max-width: 480px) { .treasury-currency { padding: 16px; }.treasury-summary { padding: 22px; }.treasury-heading h1 { font-size: 2.6rem; }.treasury-balances { gap: 18px; }.treasury-balances strong { font-size: 1.4rem; }.treasury-history > header { align-items: start; }.treasury-history h2 { font-size: 1.4rem; } }
+@media (max-width: 600px) {
+  .arena-tabs-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 14px; }
+  .arena-tabs-nav .arena-tab-btn { min-width: 0; padding: 12px 8px; white-space: normal; }
+}

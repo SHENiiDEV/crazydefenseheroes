@@ -2,8 +2,11 @@
 
 namespace Tests\Feature\Api;
 
+use App\Mail\PurchaseReceipt;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -121,20 +124,21 @@ class PlayerStateTest extends TestCase
 
     public function test_player_can_topup_wallet(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
+        Storage::fake('local');
 
         $user = User::factory()->create();
         $user->wallet()->create(['diamonds' => 0, 'soft_currency' => 100]);
         Sanctum::actingAs($user);
 
-        $response = $this->postJson('/api/v1/me/wallet/topup', ['package_code' => 'free-demo-100']);
+        $response = $this->postJson('/api/v1/me/topup', ['diamonds' => 100, 'gold' => 200, 'idempotency_key' => 'player-topup-0001']);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.wallet.diamonds', 100)
             ->assertJsonPath('data.wallet.soft_currency', 300);
 
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\TopUpReceiptMail::class);
+        Mail::assertSent(PurchaseReceipt::class);
     }
 
     public function test_company_endpoint_returns_company_details(): void

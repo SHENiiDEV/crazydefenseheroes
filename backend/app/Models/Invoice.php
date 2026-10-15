@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'sent_at',
 ])]
 #[Visible([
+    'id',
     'invoice_number',
     'subtotal_minor',
     'tax_minor',

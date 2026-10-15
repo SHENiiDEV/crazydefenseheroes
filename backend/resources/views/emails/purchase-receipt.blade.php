@@ -18,7 +18,10 @@
             <div class="brand">CRAZY DEFENSE <span>HEREOES</span></div>
         </div>
         <p>Hello {{ $invoice->user->name }},</p>
-        <p>Thank you for your Crazy Defense Hereoes purchase. Your official fiscal receipt is attached as a PDF.</p>
+        <p>Thank you for your Crazy Defense Hereoes purchase. Your invoice is attached as a PDF.</p>
+        @if ($invoice->order->provider === 'manual')
+            <p>This is a manual top-up. No money was collected through a payment gateway. The total below is the reference value of your digital goods.</p>
+        @endif
         <p><strong>Invoice:</strong> {{ $invoice->invoice_number }}<br>
         <strong>Total:</strong> {{ number_format($invoice->total_minor / 100, 2, '.', '') }} {{ $invoice->currency }}</p>
         <p>Keep this confirmation for your records.</p>

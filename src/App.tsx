@@ -3,7 +3,6 @@ import { GameCanvas } from './game/GameCanvas';
 import { GameDashboard } from './game/GameDashboard';
 import { CompanyInfo, getCompanyInfo, getPlayerState, PlayerState } from './lib/api';
 import { DEFAULT_COMPANY_INFO, LegalModal, LegalDocType } from './game/components/LegalModal';
-import { TopUpModal } from './game/components/TopUpModal';
 
 type ChestId = 'silver' | 'gold' | 'bronze';
 type AuthTab = 'register' | 'login';
@@ -385,7 +384,7 @@ export function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authInitialTab, setAuthInitialTab] = useState<AuthTab>('register');
   const [legalModalTab, setLegalModalTab] = useState<LegalDocType | null>(null);
-  const [showTopUp, setShowTopUp] = useState(false);
+  const [arenaInitialTab, setArenaInitialTab] = useState<'battle' | 'treasury'>('battle');
   const [notice, setNotice] = useState('');
   const [player, setPlayer] = useState<PlayerState | null>(null);
   const [company, setCompany] = useState<CompanyInfo>(DEFAULT_COMPANY_INFO);
@@ -443,8 +442,14 @@ export function App() {
   const handleLogout = () => {
     window.localStorage.removeItem('cdh.token');
     setPlayer(null);
+    setArenaInitialTab('battle');
     setCurrentView('landing');
     showNotice(language === 'RU' ? 'Вы вышли из аккаунта.' : 'Signed out from the watch.');
+  };
+
+  const openTreasury = () => {
+    setArenaInitialTab('treasury');
+    setCurrentView('game');
   };
 
   // If user opened the full game arena view
@@ -452,8 +457,9 @@ export function App() {
     return (
       <GameDashboard
         player={player}
+        initialTab={arenaInitialTab}
         onUpdatePlayer={(updater) => setPlayer((prev) => (prev ? updater(prev) : null))}
-        onBackToLanding={() => setCurrentView('landing')}
+        onBackToLanding={() => { setArenaInitialTab('battle'); setCurrentView('landing'); }}
         onLogout={handleLogout}
       />
     );
@@ -480,7 +486,7 @@ export function App() {
 
         {player ? (
           <div className="topbar-user">
-            <button className="button-play-now" onClick={() => setCurrentView('game')}>
+            <button className="button-play-now" onClick={() => { setArenaInitialTab('battle'); setCurrentView('game'); }}>
               <i className="fa-solid fa-gamepad" style={{ marginRight: 6 }} />
               {language === 'RU' ? 'В БОЙ' : 'PLAY'}
             </button>
@@ -494,7 +500,7 @@ export function App() {
                 type="button"
                 className="user-wallet-plus"
                 title={language === 'RU' ? 'Пополнить баланс' : 'Top up balance'}
-                onClick={() => setShowTopUp(true)}
+                onClick={openTreasury}
               >
                 +
               </button>
@@ -531,7 +537,7 @@ export function App() {
               <button
                 className="button-play-now"
                 style={{ padding: '16px 36px', fontSize: '1rem' }}
-                onClick={() => setCurrentView('game')}
+                onClick={() => { setArenaInitialTab('battle'); setCurrentView('game'); }}
               >
                 <i className="fa-solid fa-gamepad" style={{ marginRight: 8 }} />
                 {language === 'RU' ? 'ВОЙТИ В ИГРОВУЮ АРЕНУ' : 'ENTER BATTLE ARENA'} <span>↗</span>
@@ -673,7 +679,7 @@ export function App() {
           <h2 id="closing-title">{language === 'RU' ? <>Постройте крепость,<br />достойную легенд.</> : <>Build a fortress<br />worth remembering.</>}</h2>
           <p>{language === 'RU' ? 'Начните с одной клетки. Останьтесь ради бесконечной битвы.' : 'Start with one empty tile. Stay for the story the waves write back.'}</p>
           {player ? (
-            <button className="button button-orange closing-cta" onClick={() => setCurrentView('game')}>
+            <button className="button button-orange closing-cta" onClick={() => { setArenaInitialTab('battle'); setCurrentView('game'); }}>
               <i className="fa-solid fa-gamepad" style={{ marginRight: 6 }} />
               {language === 'RU' ? 'В БОЙ' : 'Enter Battle Arena'} <span>↗</span>
             </button>
@@ -727,8 +733,9 @@ export function App() {
                     className="footer-link-btn"
                     onClick={() => {
                       if (player) {
-                        setShowTopUp(true);
+                        openTreasury();
                       } else {
+                        setArenaInitialTab('treasury');
                         setAuthInitialTab('login');
                         setAuthModalOpen(true);
                         showNotice(language === 'RU' ? 'Войдите для пополнения сокровищницы' : 'Sign in to access your treasury');
@@ -745,6 +752,7 @@ export function App() {
                     className="footer-link-btn"
                     onClick={() => {
                       if (player) {
+                        setArenaInitialTab('battle');
                         setCurrentView('game');
                       } else {
                         setAuthInitialTab('login');
@@ -850,14 +858,6 @@ export function App() {
           initialTab={authInitialTab}
           onClose={() => setAuthModalOpen(false)}
           onAuthSuccess={handleAuthSuccess}
-        />
-      )}
-      {showTopUp && player && (
-        <TopUpModal
-          player={player}
-          onClose={() => setShowTopUp(false)}
-          onUpdatePlayer={(updater) => setPlayer((prev) => (prev ? updater(prev) : null))}
-          onSuccessNotice={showNotice}
         />
       )}
       {legalModalTab && (

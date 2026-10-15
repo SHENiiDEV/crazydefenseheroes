@@ -21,7 +21,7 @@ final class OrderController
         return response()->json([
             'success' => true,
             'data' => [
-                'orders' => $user->orders()->with('items')->latest()->limit(50)->get(),
+                'orders' => $user->orders()->with(['items', 'invoice'])->latest()->limit(50)->get(),
             ],
         ]);
     }

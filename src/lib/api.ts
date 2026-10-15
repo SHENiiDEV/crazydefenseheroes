@@ -109,6 +109,11 @@ export type Order = {
   currency: string;
   paid_at: string | null;
   created_at: string;
+  invoice?: {
+    id: number;
+    invoice_number: string;
+    sent_at: string | null;
+  } | null;
   items: Array<{
     product_code: string;
     product_name: string;
@@ -326,21 +331,58 @@ export async function openChestApi(
   return payload.data;
 }
 
-export async function topupWalletApi(token: string, packageCode: string): Promise<PlayerState> {
-  const response = await fetch(API_BASE_URL + '/me/wallet/topup', {
+export type TopUpSettings = {
+  manual_enabled: boolean;
+  currency: string;
+  diamonds_per_euro: number;
+  gold_per_euro: number;
+  max_quantity: number;
+};
+
+export async function getTopUpSettings(token: string): Promise<TopUpSettings> {
+  const response = await fetch(API_BASE_URL + '/me/topup', {
+    headers: { Accept: 'application/json', Authorization: 'Bearer ' + token },
+  });
+  const payload = await response.json() as ApiEnvelope<TopUpSettings>;
+  if (!response.ok || !payload.success) throw new Error(payload.error?.message ?? 'Could not load purchase options.');
+  return payload.data;
+}
+
+export async function getOrders(token: string): Promise<Order[]> {
+  const response = await fetch(API_BASE_URL + '/me/orders', {
+    headers: { Accept: 'application/json', Authorization: 'Bearer ' + token },
+  });
+  const payload = await response.json() as ApiEnvelope<{ orders: Order[] }>;
+  if (!response.ok || !payload.success) throw new Error(payload.error?.message ?? 'Could not load purchase history.');
+  return payload.data.orders;
+}
+
+export async function purchaseTopUp(token: string, diamonds: number, gold: number, idempotencyKey: string): Promise<{
+  order: Order;
+  wallet: NonNullable<PlayerState['wallet']>;
+}> {
+  const response = await fetch(API_BASE_URL + '/me/topup', {
     method: 'POST',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + token,
     },
-    body: JSON.stringify({ package_code: packageCode }),
+    body: JSON.stringify({ diamonds, gold, idempotency_key: idempotencyKey }),
   });
-  const payload = await response.json() as ApiEnvelope<PlayerState>;
+  const payload = await response.json() as ApiEnvelope<{ order: Order; wallet: NonNullable<PlayerState['wallet']> }>;
 
   if (!response.ok || !payload.success) {
     throw new Error(payload.error?.message ?? 'Wallet top-up failed.');
   }
 
   return payload.data;
+}
+
+export async function downloadInvoice(token: string, invoiceId: number): Promise<Blob> {
+  const response = await fetch(API_BASE_URL + '/me/invoices/' + invoiceId, {
+    headers: { Accept: 'application/pdf', Authorization: 'Bearer ' + token },
+  });
+  if (!response.ok) throw new Error('Invoice could not be downloaded. Please try again.');
+  return response.blob();
 }

@@ -29,6 +29,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'currency',
     'paid_at',
     'created_at',
+    'items',
+    'invoice',
 ])]
 class Order extends Model
 {

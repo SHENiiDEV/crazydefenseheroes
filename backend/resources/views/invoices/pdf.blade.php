@@ -36,8 +36,12 @@
 
     <table class="meta">
         <tr>
-            <td><div class="label">Billed to</div><strong>{{ $invoice->user->name }} {{ $invoice->user->surname }}</strong><br>{{ $invoice->user->email }}<br>{{ $invoice->user->address?->street }}<br>{{ $invoice->user->address?->city }}, {{ $invoice->user->address?->postcode }}<br>{{ $invoice->user->address?->country }}</td>
-            <td><div class="label">Payment</div>Order {{ $invoice->order->public_id }}<br>Status: paid<br>Currency: {{ $invoice->currency }}</td>
+            <td><div class="label">Billed to</div><strong>{{ $invoice->user->name }} {{ $invoice->user->surname }}</strong><br>{{ $invoice->user->email }}
+                @if ($invoice->user->address)
+                    <br>{{ $invoice->user->address->street }}<br>{{ $invoice->user->address->city }}, {{ $invoice->user->address->postcode }}<br>{{ $invoice->user->address->country }}
+                @endif
+            </td>
+            <td><div class="label">Payment</div>Order {{ $invoice->order->public_id }}<br>Status: {{ $invoice->order->provider === 'manual' ? 'Manual allocation completed' : 'Paid' }}<br>Currency: {{ $invoice->currency }}</td>
         </tr>
     </table>
 
@@ -61,6 +65,12 @@
         <tr class="grand"><td>Total</td><td class="right">{{ number_format($invoice->total_minor / 100, 2, '.', '') }} {{ $invoice->currency }}</td></tr>
     </table>
 
-    <div class="footer">Thank you for supporting Crazy Defense Hereoes. Digital goods are delivered to the account shown above.</div>
+    <div class="footer">
+        @if ($invoice->order->provider === 'manual')
+            Manual top-up. No money was collected through a payment gateway. Amounts show the reference value of the allocated digital goods.
+        @else
+            Thank you for supporting Crazy Defense Hereoes. Digital goods are delivered to the account shown above.
+        @endif
+    </div>
 </body>
 </html>

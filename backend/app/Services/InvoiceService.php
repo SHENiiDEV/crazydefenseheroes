@@ -6,12 +6,23 @@ use App\Jobs\SendPurchaseReceipt;
 use App\Models\Invoice;
 use App\Models\Order;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 final class InvoiceService
 {
     public function issueForOrder(Order $order): Invoice
+    {
+        return DB::transaction(function () use ($order): Invoice {
+            Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            return $this->generateForOrder($order);
+        });
+    }
+
+    private function generateForOrder(Order $order): Invoice
     {
         $order->loadMissing(['items', 'user.address']);
         $invoice = Invoice::query()->where('order_id', $order->id)->first();
@@ -42,7 +53,9 @@ final class InvoiceService
                 'company' => config('company'),
             ])->setPaper('a4');
 
-            Storage::disk(config('invoice.storage_disk'))->put($path, $pdf->output());
+            if (! Storage::disk(config('invoice.storage_disk'))->put($path, $pdf->output())) {
+                throw new RuntimeException('The invoice PDF could not be saved.');
+            }
             $invoice->update(['pdf_path' => $path]);
         }
 

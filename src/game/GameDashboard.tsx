@@ -4,10 +4,10 @@ import { PlayerState, upgradeTowerApi, openChestApi } from '../lib/api';
 import { TowerTypeId } from './types';
 import { TOWER_CONFIGS } from './entities/Tower';
 import { ChestArt } from './components/ChestArt';
-import { TopUpModal } from './components/TopUpModal';
+import { TreasuryPage } from './components/TreasuryPage';
 import { TowerEmblem } from './components/TowerEmblem';
 
-type Tab = 'battle' | 'vault' | 'arsenal' | 'stats';
+type Tab = 'battle' | 'vault' | 'arsenal' | 'treasury';
 
 type ChestOption = {
   id: 'bronze' | 'silver' | 'gold';
@@ -120,24 +120,25 @@ type LootResult = {
 
 export function GameDashboard({
   player,
+  initialTab = 'battle',
   onUpdatePlayer,
   onBackToLanding,
   onLogout,
 }: {
   player: PlayerState;
+  initialTab?: 'battle' | 'treasury';
   onUpdatePlayer: (updater: (prev: PlayerState) => PlayerState) => void;
   onBackToLanding: () => void;
   onLogout: () => void;
 }) {
   const language: string = 'EN';
-  const [activeTab, setActiveTab] = useState<Tab>('battle');
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [isManualPaused, setIsManualPaused] = useState(false);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [selectedBuildType, setSelectedBuildType] = useState<TowerTypeId>('ember-archer');
   const [openingChest, setOpeningChest] = useState<string | null>(null);
   const [lootResult, setLootResult] = useState<LootResult | null>(null);
   const [feedbackNotice, setFeedbackNotice] = useState('');
-  const [showTopUp, setShowTopUp] = useState(false);
 
   const showFeedback = (msg: string) => {
     setFeedbackNotice(msg);
@@ -370,7 +371,7 @@ export function GameDashboard({
         <div className="arena-user-status">
           <div
             className="arena-wallet-badge clickable-wallet-badge"
-            onClick={() => setShowTopUp(true)}
+            onClick={() => setActiveTab('treasury')}
             title={language === 'RU' ? 'Нажмите для пополнения баланса' : 'Click to refill balance'}
           >
             <span className="wallet-item">
@@ -385,7 +386,7 @@ export function GameDashboard({
             <span className="wallet-plus-btn">+</span>
           </div>
 
-          <button className="button-topup-nav" onClick={() => setShowTopUp(true)}>
+          <button className="button-topup-nav" onClick={() => setActiveTab('treasury')}>
             <i className="fa-solid fa-gem" style={{ marginRight: 6, color: '#2980b9' }} /> {language === 'RU' ? 'Пополнить' : 'Top-Up'}
           </button>
 
@@ -430,10 +431,14 @@ export function GameDashboard({
           <i className="fa-solid fa-shield-halved" style={{ marginRight: 8, color: '#3498db' }} />
           {language === 'RU' ? 'Башни и арсенал' : 'Towers & Arsenal'}
         </button>
+        <button className={`arena-tab-btn ${activeTab === 'treasury' ? 'active' : ''}`} onClick={() => setActiveTab('treasury')}>
+          <i className="fa-solid fa-coins" style={{ marginRight: 8, color: '#d6a64d' }} aria-hidden="true" /> Treasury & Top-Up
+        </button>
       </nav>
 
       {/* Main Content Area */}
-      <main className={`arena-main-content ${isTheaterMode ? 'theater-mode' : ''}`}>
+      <main className={`arena-main-content ${isTheaterMode && activeTab === 'battle' ? 'theater-mode' : ''}`}>
+        {activeTab === 'treasury' && <TreasuryPage player={player} onUpdatePlayer={onUpdatePlayer} />}
         <section className={`battle-layout ${activeTab !== 'battle' ? 'tab-panel-hidden' : ''}`}>
           <div className="battle-canvas-container">
             <div className="battle-hud-header">
@@ -591,7 +596,7 @@ export function GameDashboard({
                   <i className="fa-solid fa-box-open" style={{ marginRight: 6 }} />
                   {language === 'RU' ? 'Открыть сундуки' : 'Open Chests'} <span>↗</span>
                 </button>
-                <button className="button button-dark" onClick={() => setShowTopUp(true)}>
+                <button className="button button-dark" onClick={() => setActiveTab('treasury')}>
                   <i className="fa-solid fa-gem" style={{ marginRight: 6, color: '#2980b9' }} /> {language === 'RU' ? 'Пополнить баланс' : 'Top-Up'}
                 </button>
               </div>
@@ -815,14 +820,6 @@ export function GameDashboard({
       )}
 
       {/* Top Up Modal */}
-      {showTopUp && (
-        <TopUpModal
-          player={player}
-          onClose={() => setShowTopUp(false)}
-          onUpdatePlayer={onUpdatePlayer}
-          onSuccessNotice={showFeedback}
-        />
-      )}
 
       {feedbackNotice && (
         <div className="toast" role="status">

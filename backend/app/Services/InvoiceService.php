@@ -31,18 +31,12 @@ final class InvoiceService
             $invoice = Invoice::create([
                 'order_id' => $order->id,
                 'user_id' => $order->user_id,
-                'invoice_number' => 'pending-'.Str::uuid(),
+                'invoice_number' => $this->generateInvoiceNumber(),
                 'subtotal_minor' => $order->total_minor,
                 'tax_minor' => 0,
                 'total_minor' => $order->total_minor,
                 'currency' => $order->currency,
                 'issued_at' => now(),
-            ]);
-            $invoice->update([
-                'invoice_number' => config('invoice.number_prefix')
-                    .now()->format('Y')
-                    .'-'
-                    .str_pad((string) $invoice->id, 6, '0', STR_PAD_LEFT),
             ]);
         }
 
@@ -64,5 +58,14 @@ final class InvoiceService
         }
 
         return $invoice->fresh();
+    }
+
+    private function generateInvoiceNumber(): string
+    {
+        do {
+            $number = config('invoice.number_prefix').now()->format('Y').'-'.Str::upper(Str::random(16));
+        } while (Invoice::query()->where('invoice_number', $number)->exists());
+
+        return $number;
     }
 }

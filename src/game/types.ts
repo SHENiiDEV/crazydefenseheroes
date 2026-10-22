@@ -8,7 +8,7 @@ export type GridCell = {
   col: number;
 };
 
-export type WavePhase = 'spawning' | 'resting';
+export type WavePhase = 'spawning' | 'fighting' | 'resting';
 
 export type TowerTypeId = 'ember-archer' | 'stone-warden' | 'vault-mage';
 

@@ -26,6 +26,7 @@ class CreateTopUpRequest extends FormRequest
             'diamonds' => ['required', 'integer', 'min:0', 'max:'.config('topup.max_quantity')],
             'gold' => ['required', 'integer', 'min:0', 'max:'.config('topup.max_quantity')],
             'idempotency_key' => ['required', 'string', 'min:8', 'max:160'],
+            'currency' => ['sometimes', 'required', 'string', 'in:EUR,GBP,USD'],
         ];
     }
 }

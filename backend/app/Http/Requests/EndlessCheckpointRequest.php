@@ -20,7 +20,7 @@ class EndlessCheckpointRequest extends FormRequest
             'run_id' => ['required', 'uuid'],
             'wave' => ['required', 'integer', 'min:1', 'max:100000'],
             'defeated_enemies' => ['required', 'integer', 'min:0', 'max:10000000'],
-            'lives_remaining' => ['required', 'integer', 'min:0', 'max:1000'],
+            'lives_remaining' => ['required', 'integer', 'min:1', 'max:20'],
         ];
     }
 }

@@ -37,24 +37,24 @@ const chests: Chest[] = [
     id: 'silver',
     name: 'Silver cache',
     eyebrow: 'TACTICAL START',
-    description: 'A fast route into the defense. Grab reliable common cards and build your first line.',
-    loot: '3 common tower cards',
+    description: 'Unlock Stone Warden or add one tower level, plus two Fortify charges. Fixed contents; no currency returned.',
+    loot: '120 Gold · 1 Stone Warden card + 2 Fortify',
     color: 'silver',
   },
   {
     id: 'gold',
     name: 'Gold chest',
-    eyebrow: 'LEGENDARY DROP',
-    description: 'Three tower game cards, ranging from Common to Legendary. Every wave deserves a little chaos.',
-    loot: '3 tower cards · Common → Legendary',
+    eyebrow: 'FIXED CONTENTS',
+    description: 'Unlock Vault Mage or add one tower level, plus three Meteor Strike charges. No random drops.',
+    loot: '250 Gold + 10 Diamonds · Vault Mage + 3 Meteor Strike',
     color: 'gold',
   },
   {
     id: 'bronze',
     name: 'Bronze stash',
     eyebrow: 'BRAVE BEGINNINGS',
-    description: 'A sturdy starter stash with the gear you need to turn a quiet hill into a fortress.',
-    loot: '3 starter tower cards',
+    description: 'Unlock Ember Archer or add one tower level, plus one Speed Burst charge. No Gold or Diamonds returned.',
+    loot: '50 Gold · 1 Ember Archer card + 1 Speed Burst',
     color: 'bronze',
   },
 ];
@@ -426,14 +426,9 @@ export function App() {
       playerState = await getPlayerState(token);
       setPlayer(playerState);
     } catch {
-      playerState = {
-        user: { id: 0, name: user.name, surname: user.surname, email: user.email, email_verified: true, address: null },
-        wallet: { id: 0, diamonds: 0, soft_currency: 100 },
-        inventory: { tower_cards: [{ id: 1, code: 'ember-archer', level: 1, quantity: 1, is_equipped: true }], items: [], boosts: [] },
-        loadout: { id: 1, slots: ['ember-archer'] },
-        endless_progress: null,
-      };
-      setPlayer(playerState);
+      setPlayer(null);
+      showNotice('Signed in, but your saved account could not be loaded. Please refresh before playing.');
+      return;
     }
     setCurrentView('game');
     showNotice(language === 'RU' ? `Добро пожаловать на стражу, ${user.name}!` : `Welcome to the watch, ${user.name}!`);
@@ -457,6 +452,7 @@ export function App() {
     return (
       <GameDashboard
         player={player}
+        company={company}
         initialTab={arenaInitialTab}
         onUpdatePlayer={(updater) => setPlayer((prev) => (prev ? updater(prev) : null))}
         onBackToLanding={() => { setArenaInitialTab('battle'); setCurrentView('landing'); }}
@@ -524,7 +520,7 @@ export function App() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <p className="eyebrow"><span className="eyebrow-line" /> {language === 'RU' ? 'Играй · Зарабатывай · Побеждай' : 'Play · Earn · Enjoy'} <span className="eyebrow-line" /></p>
+          <p className="eyebrow"><span className="eyebrow-line" /> Play · Build · Defend <span className="eyebrow-line" /></p>
           <h1><span>Crazy</span> <em>Defense</em> <strong>Hereoes</strong></h1>
           <p className="hero-subtitle">
             {language === 'RU'
@@ -772,25 +768,11 @@ export function App() {
               <h4 className="footer-heading">
                 {language === 'RU' ? 'ПЛАТЕЖИ И БЕЗОПАСНОСТЬ' : 'PAYMENTS & SECURITY'}
               </h4>
-              <p className="footer-security-text">
-                {language === 'RU'
-                  ? 'Все транзакции защищены 256-битным шифрованием по международному стандарту PCI DSS Level 1.'
-                  : 'All transactions are guarded with 256-bit SSL encryption adhering to PCI DSS Level 1 standards.'}
-              </p>
-              <div className="payment-badges-wrap">
-                <div className="payment-badge-card" title="Verified Visa Payment Gateway">
-                  <img src="/images/visa.png" alt="Visa" className="payment-logo" />
-                </div>
-                <div className="payment-badge-card" title="Mastercard Identity Check / 3D Secure">
-                  <img src="/images/mastercard.png" alt="Mastercard" className="payment-logo" />
-                </div>
-                <div className="payment-badge-card pci-card" title="PCI DSS Level 1 Certified Security">
-                  <img src="/images/pci-dss.png" alt="PCI DSS Compliant" className="payment-logo pci-logo" />
-                </div>
-              </div>
+              <p className="footer-security-text">Current mode: manual allocations. No card payment is collected. Choose EUR, GBP or USD in Treasury; your order and invoice show the selected currency.</p>
+              <p className="footer-security-text">Fixed chest contents, saved account balances and downloadable invoices. Virtual items have no cash redemption or transfer value.</p>
               <div className="footer-ssl-note">
                 <span className="ssl-lock-icon"><i className="fa-solid fa-lock" /></span>
-                <small>256-BIT SSL TLS 1.3 ENCRYPTION</small>
+                <small>ACCOUNT PURCHASE RECORDS</small>
               </div>
             </div>
 
@@ -821,7 +803,7 @@ export function App() {
                 <li>
                   <button type="button" className="footer-link-btn" onClick={() => setLegalModalTab('security')}>
                     <i className="fa-solid fa-lock" style={{ marginRight: 6 }} />
-                    {language === 'RU' ? 'Безопасность и PCI DSS' : 'PCI DSS & Security Audit'}
+                    Account & Purchase Security
                   </button>
                 </li>
                 <li>
@@ -845,9 +827,9 @@ export function App() {
               © 2026 {company.name} (Company No. {company.number}). {language === 'RU' ? 'Все права защищены.' : 'All rights reserved.'} · {company.address}
             </div>
             <div className="footer-bottom-tags">
-              <span className="footer-tag">GDPR COMPLIANT</span>
-              <span className="footer-tag">PCI DSS VERIFIED</span>
-              <span className="footer-tag">STABLE v2.4.0</span>
+              <span className="footer-tag">UK PRIVACY POLICY</span>
+              <span className="footer-tag">MANUAL PURCHASE MODE</span>
+              <span className="footer-tag">EUR · GBP · USD</span>
             </div>
           </div>
         </div>

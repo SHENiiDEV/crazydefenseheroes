@@ -19,7 +19,7 @@ final class TopUpController
         /** @var User $user */
         $user = $request->user();
         $data = $request->validated();
-        $order = $topups->purchase($user, (int) $data['diamonds'], (int) $data['gold'], $data['idempotency_key']);
+        $order = $topups->purchase($user, (int) $data['diamonds'], (int) $data['gold'], $data['idempotency_key'], $data['currency'] ?? 'EUR');
 
         return response()->json(['success' => true, 'data' => [
             'order' => $order->load(['items', 'invoice']),

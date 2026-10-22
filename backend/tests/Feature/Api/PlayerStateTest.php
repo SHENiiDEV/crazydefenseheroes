@@ -119,7 +119,7 @@ class PlayerStateTest extends TestCase
             ->assertJsonPath('data.loot.card_code', 'ember-archer')
             ->assertJsonPath('data.loot.new_level', 2)
             ->assertJsonPath('data.player.inventory.tower_cards.0.level', 2);
-        $this->assertGreaterThan(0, $response->json('data.loot.coins'));
+        $this->assertSame(0, $response->json('data.loot.coins'));
     }
 
     public function test_player_can_topup_wallet(): void

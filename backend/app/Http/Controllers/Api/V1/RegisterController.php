@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\RegisterRequest;
+use App\Mail\WelcomeRegistrationMail;
 use App\Models\User;
-use App\Notifications\VerifyEmailNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 final class RegisterController
 {
@@ -57,7 +58,7 @@ final class RegisterController
                 'quantity' => 1,
             ]);
             $user->boosts()->create([
-                'code' => 'first-watch',
+                'code' => 'speed-burst',
                 'quantity' => 1,
             ]);
             $user->loadout()->create([
@@ -70,7 +71,7 @@ final class RegisterController
         $token = $user->createToken('frontend')->plainTextToken;
 
         try {
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\WelcomeRegistrationMail($user));
+            Mail::to($user->email)->send(new WelcomeRegistrationMail($user));
         } catch (\Throwable) {
             // Logged or swallowed to prevent blocking registration if mail server has transient issues
         }

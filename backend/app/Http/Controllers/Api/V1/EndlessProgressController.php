@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Requests\EndlessCheckpointRequest;
 use App\Models\EndlessRun;
 use App\Models\User;
+use App\Models\WalletTransaction;
 use App\Models\WaveCheckpoint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,7 @@ final class EndlessProgressController
         $data = $request->validated();
 
         $result = DB::transaction(function () use ($user, $data): array {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
             $run = EndlessRun::query()
                 ->where('user_id', $user->id)
                 ->where('client_run_id', $data['run_id'])
@@ -90,6 +92,11 @@ final class EndlessProgressController
                 $wallet = $user->wallet()->create();
             }
             $wallet->increment('soft_currency', $reward);
+            WalletTransaction::create([
+                'user_id' => $user->id, 'wallet_id' => $wallet->id, 'reference' => 'wave:'.$checkpoint->id, 'type' => 'wave_reward',
+                'diamonds_delta' => 0, 'soft_currency_delta' => $reward,
+                'metadata' => ['run_id' => $data['run_id'], 'wave' => $data['wave']],
+            ]);
 
             return [
                 'run' => $run->fresh(),

@@ -36,6 +36,8 @@ class EndlessProgressTest extends TestCase
             ->assertJsonPath('data.wallet.soft_currency', 12);
 
         $this->assertDatabaseCount('wave_checkpoints', 1);
+        $this->assertDatabaseHas('wallet_transactions', ['user_id' => $user->id, 'type' => 'wave_reward', 'soft_currency_delta' => 12]);
+        $this->assertDatabaseCount('wallet_transactions', 1);
         $this->assertDatabaseHas('endless_runs', [
             'user_id' => $user->id,
             'highest_wave' => 1,

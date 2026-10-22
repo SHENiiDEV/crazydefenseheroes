@@ -8,6 +8,42 @@ export type CompanyInfo = {
   domain: string;
 };
 
+export type ChestOption = {
+  id: 'bronze' | 'silver' | 'gold'; name: string; cost_gold: number; cost_diamonds: number;
+  card_code: string; card_name: string; boost_code: string; boost_name: string; boost_quantity: number;
+};
+
+export type GameRules = {
+  upgrade_gold_per_level: number; upgrade_diamonds_per_level: number;
+  chests: Record<string, ChestOption>;
+  boosts: Record<string, { name: string; description: string }>;
+};
+
+export type LegalDocument = { title: string; version: string; sections: Array<{ title: string; paragraphs: string[] }> };
+
+export async function getLegalDocument(type: string, signal?: AbortSignal): Promise<LegalDocument> {
+  const response = await fetch(API_BASE_URL + '/legal/' + type, { headers: { Accept: 'application/json' }, signal });
+  const payload = await response.json() as ApiEnvelope<LegalDocument>;
+  if (!response.ok || !payload.success) throw new Error('The current policy could not be loaded. Please open the full policy page.');
+  return payload.data;
+}
+
+export async function getGameRules(): Promise<GameRules> {
+  const response = await fetch(API_BASE_URL + '/game/rules', { headers: { Accept: 'application/json' } });
+  const payload = await response.json() as ApiEnvelope<GameRules>;
+  if (!response.ok || !payload.success) throw new Error('Could not load the item catalogue. Please retry.');
+  return payload.data;
+}
+
+export async function useBoostApi(token: string, code: string): Promise<PlayerState> {
+  const response = await fetch(API_BASE_URL + '/me/boosts/use', {
+    method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ code }),
+  });
+  const payload = await response.json() as ApiEnvelope<PlayerState>;
+  if (!response.ok || !payload.success) throw new Error(payload.error?.message ?? 'Boost could not be activated.');
+  return payload.data;
+}
+
 export type PlayerState = {
   user: {
     id: number;
@@ -270,7 +306,7 @@ export async function sandboxPayOrder(token: string, orderId: number): Promise<O
   return payload.data.order;
 }
 
-export async function upgradeTowerApi(token: string, code: string): Promise<PlayerState> {
+export async function upgradeTowerApi(token: string, code: string, currency: 'gold' | 'diamonds' = 'gold'): Promise<PlayerState> {
   const response = await fetch(API_BASE_URL + '/me/towers/upgrade', {
     method: 'POST',
     headers: {
@@ -278,7 +314,7 @@ export async function upgradeTowerApi(token: string, code: string): Promise<Play
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + token,
     },
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ code, currency }),
   });
   const payload = await response.json() as ApiEnvelope<PlayerState>;
 
@@ -299,6 +335,7 @@ export async function openChestApi(
     diamonds: number;
     card_code: string;
     boost_code: string;
+    boost_quantity: number;
     was_new?: boolean;
     new_level?: number;
   };
@@ -319,6 +356,7 @@ export async function openChestApi(
       diamonds: number;
       card_code: string;
       boost_code: string;
+      boost_quantity: number;
       was_new?: boolean;
       new_level?: number;
     };
@@ -337,6 +375,7 @@ export type TopUpSettings = {
   diamonds_per_euro: number;
   gold_per_euro: number;
   max_quantity: number;
+  currencies: Record<string, { diamonds_per_unit: number; gold_per_unit: number }>;
 };
 
 export async function getTopUpSettings(token: string): Promise<TopUpSettings> {
@@ -357,7 +396,7 @@ export async function getOrders(token: string): Promise<Order[]> {
   return payload.data.orders;
 }
 
-export async function purchaseTopUp(token: string, diamonds: number, gold: number, idempotencyKey: string): Promise<{
+export async function purchaseTopUp(token: string, diamonds: number, gold: number, idempotencyKey: string, currency = 'EUR'): Promise<{
   order: Order;
   wallet: NonNullable<PlayerState['wallet']>;
 }> {
@@ -368,7 +407,7 @@ export async function purchaseTopUp(token: string, diamonds: number, gold: numbe
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + token,
     },
-    body: JSON.stringify({ diamonds, gold, idempotency_key: idempotencyKey }),
+    body: JSON.stringify({ diamonds, gold, idempotency_key: idempotencyKey, currency }),
   });
   const payload = await response.json() as ApiEnvelope<{ order: Order; wallet: NonNullable<PlayerState['wallet']> }>;
 

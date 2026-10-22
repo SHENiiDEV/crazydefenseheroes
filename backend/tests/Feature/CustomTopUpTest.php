@@ -250,4 +250,50 @@ class CustomTopUpTest extends TestCase
 
         $this->assertDatabaseCount('wallet_transactions', 0);
     }
+
+    #[DataProvider('orderCurrencies')]
+    public function test_selected_currency_is_saved_on_the_order_items_and_invoice(string $currency, int $diamonds, int $gold): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+        config(['topup.currencies' => [
+            'EUR' => ['diamonds_per_unit' => 100, 'gold_per_unit' => 2000],
+            'GBP' => ['diamonds_per_unit' => 120, 'gold_per_unit' => 2400],
+            'USD' => ['diamonds_per_unit' => 90, 'gold_per_unit' => 1800],
+        ]]);
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson('/api/v1/me/topup', ['diamonds' => $diamonds, 'gold' => $gold, 'currency' => $currency, 'idempotency_key' => 'currency-order-1'])
+            ->assertOk()->assertJsonPath('data.order.currency', $currency)->assertJsonPath('data.order.total_minor', 200)
+            ->assertJsonPath('data.order.items.0.currency', $currency)->assertJsonPath('data.order.invoice.currency', $currency);
+
+        Mail::assertSent(PurchaseReceipt::class, function (PurchaseReceipt $mail) use ($currency): bool {
+            $mail->assertSeeInHtml('2.00 '.$currency);
+
+            return true;
+        });
+    }
+
+    public static function orderCurrencies(): array
+    {
+        return [['EUR', 100, 2000], ['GBP', 120, 2400], ['USD', 90, 1800]];
+    }
+
+    public function test_unsupported_currency_cannot_create_an_order(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $this->postJson('/api/v1/me/topup', ['diamonds' => 100, 'gold' => 0, 'currency' => 'JPY', 'idempotency_key' => 'unsupported-currency-1'])->assertUnprocessable();
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_order_reference_cannot_be_reused_with_a_different_currency(): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+        Sanctum::actingAs(User::factory()->create());
+        $this->postJson('/api/v1/me/topup', ['diamonds' => 100, 'gold' => 0, 'currency' => 'GBP', 'idempotency_key' => 'reused-currency-1'])->assertOk();
+        $this->postJson('/api/v1/me/topup', ['diamonds' => 100, 'gold' => 0, 'currency' => 'USD', 'idempotency_key' => 'reused-currency-1'])->assertUnprocessable();
+        $this->assertDatabaseCount('orders', 1);
+        Mail::assertSentCount(1);
+    }
 }

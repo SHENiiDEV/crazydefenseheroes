@@ -83,9 +83,9 @@ export class Tower {
   public readonly projectileColor: string;
   public readonly projectileSpeed: number;
   public readonly projectileSize: number;
-  public readonly range: number;
-  public readonly damage: number;
-  public readonly fireRate: number;
+  public range: number;
+  public damage: number;
+  public fireRate: number;
   public readonly cost: number;
 
   constructor(
@@ -94,7 +94,7 @@ export class Tower {
     public readonly y: number,
     type: TowerTypeId = 'ember-archer',
     public targetStrategy: TargetStrategy = TargetStrategy.FIRST,
-    public readonly level: number = 1,
+    public level: number = 1,
   ) {
     this.towerType = type;
     const config = TOWER_CONFIGS[type] ?? TOWER_CONFIGS['ember-archer'];
@@ -145,6 +145,14 @@ export class Tower {
     return targets.reduce((furthestAlongPath, target) => (
       target.pathProgress > furthestAlongPath.pathProgress ? target : furthestAlongPath
     ));
+  }
+
+  upgradeToLevel(level: number): void {
+    this.level = level;
+    const config = TOWER_CONFIGS[this.towerType];
+    this.damage = Math.round(config.damage * (1 + (level - 1) * 0.25));
+    this.fireRate = Math.max(100, Math.round(config.fireRate / (1 + (level - 1) * 0.08)));
+    this.range = Math.round(config.range * (1 + (level - 1) * 0.05));
   }
 
   fire(target: Enemy, currentTime: number): Projectile | null {

@@ -10,6 +10,7 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
   const [settings, setSettings] = useState<TopUpSettings | null>(null);
   const [diamonds, setDiamonds] = useState('500');
   const [gold, setGold] = useState('0');
+  const [currency, setCurrency] = useState('EUR');
   const [orders, setOrders] = useState<Order[]>([]);
   const [error, setError] = useState('');
   const [historyError, setHistoryError] = useState('');
@@ -44,9 +45,10 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
   const validAmount = (value: string) => /^\d+$/.test(value) && Number.isSafeInteger(Number(value))
     && Number(value) <= (settings?.max_quantity ?? 0);
   const amountsValid = validAmount(diamonds) && validAmount(gold) && Number(diamonds) + Number(gold) > 0;
-  const diamondCost = settings && validAmount(diamonds) ? Math.ceil(Number(diamonds) * 100 / settings.diamonds_per_euro) : 0;
-  const goldCost = settings && validAmount(gold) ? Math.ceil(Number(gold) * 100 / settings.gold_per_euro) : 0;
-  const money = (minor: number, currency = settings?.currency ?? 'EUR') => new Intl.NumberFormat('en-GB', { style: 'currency', currency }).format(minor / 100);
+  const rates = settings?.currencies[currency];
+  const diamondCost = rates && validAmount(diamonds) ? Math.ceil(Number(diamonds) * 100 / rates.diamonds_per_unit) : 0;
+  const goldCost = rates && validAmount(gold) ? Math.ceil(Number(gold) * 100 / rates.gold_per_unit) : 0;
+  const money = (minor: number, code = currency) => new Intl.NumberFormat('en-GB', { style: 'currency', currency: code }).format(minor / 100);
   const count = (value: number) => new Intl.NumberFormat('en-GB').format(value);
 
   const refresh = async () => {
@@ -72,12 +74,12 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
     setBusy(true);
     setError('');
     setSuccess('');
-    const amounts = `${Number(diamonds)}:${Number(gold)}`;
+    const amounts = `${currency}:${Number(diamonds)}:${Number(gold)}`;
     if (purchaseRef.current?.amounts !== amounts) {
       purchaseRef.current = { amounts, key: window.crypto.randomUUID() };
     }
     try {
-      const result = await purchaseTopUp(token(), Number(diamonds), Number(gold), purchaseRef.current.key);
+      const result = await purchaseTopUp(token(), Number(diamonds), Number(gold), purchaseRef.current.key, currency);
       onUpdatePlayer((previous) => ({ ...previous, wallet: result.wallet }));
       setOrders((previous) => [result.order, ...previous.filter((order) => order.id !== result.order.id)]);
       setSuccess(`Your treasury has been replenished. Your PDF invoice is ready; the receipt email is ${result.order.invoice?.sent_at ? 'sent' : 'queued'}.`);
@@ -129,8 +131,8 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
       {settings && <form className="treasury-layout" onSubmit={purchase}>
         <div className="treasury-amounts">
           {([
-            { id: 'diamonds', label: 'Diamonds', value: diamonds, set: setDiamonds, rate: settings.diamonds_per_euro, icon: 'gem', presets: [100, 500, 1200, 2500] },
-            { id: 'gold', label: 'Gold coins', value: gold, set: setGold, rate: settings.gold_per_euro, icon: 'coins', presets: [2000, 10000, 25000, 50000] },
+            { id: 'diamonds', label: 'Diamonds', value: diamonds, set: setDiamonds, rate: rates?.diamonds_per_unit ?? 100, icon: 'gem', presets: [100, 500, 1200, 2500] },
+            { id: 'gold', label: 'Gold coins', value: gold, set: setGold, rate: rates?.gold_per_unit ?? 2000, icon: 'coins', presets: [2000, 10000, 25000, 50000] },
           ]).map((item) => <fieldset key={item.id} className={`treasury-currency treasury-${item.id}`} disabled={busy}>
             <legend><i className={`fa-solid fa-${item.icon}`} aria-hidden="true" /> {item.label}</legend>
             <p>{money(100)} = {count(item.rate)} {item.label.toLowerCase()}</p>
@@ -147,6 +149,11 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
         <aside className="treasury-summary">
           <span className="treasury-order-label">YOUR REQUISITION</span>
           <h2>Ready for the watch.</h2>
+          <label className="treasury-currency-label" htmlFor="payment-currency">Order currency</label>
+          <select id="payment-currency" value={currency} disabled={busy} onChange={(event) => setCurrency(event.target.value)}>
+            {Object.keys(settings.currencies).map((code) => <option key={code} value={code}>{code} — {({ EUR: 'Euro', GBP: 'Pound sterling', USD: 'US dollar' } as Record<string, string>)[code]}</option>)}
+          </select>
+          <p className="treasury-receipt-note">Your total and invoice use {currency}. These are fixed game prices, not a live exchange-rate service.</p>
           <dl><div><dt>Diamonds</dt><dd>{money(diamondCost)}</dd></div><div><dt>Gold coins</dt><dd>{money(goldCost)}</dd></div>
             <div className="treasury-total"><dt>Total value</dt><dd>{money(diamondCost + goldCost)}</dd></div></dl>
           <p className="treasury-mode"><b>Manual purchase</b>No card payment is collected. Confirming adds the selected currency to your account.</p>

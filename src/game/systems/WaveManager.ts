@@ -38,6 +38,7 @@ export class WaveManager {
     deltaTime: number,
     onSpawn: (wave: number, enemyNumber: number) => void,
     onWaveComplete?: (wave: number) => void,
+    hasLivingEnemies: () => boolean = () => false,
   ): void {
     if (this.phase === 'resting') {
       this.restTimer -= deltaTime;
@@ -61,6 +62,10 @@ export class WaveManager {
     }
 
     if (this.spawned >= this.totalEnemies()) {
+      this.phase = 'fighting';
+    }
+
+    if (this.phase === 'fighting' && !hasLivingEnemies()) {
       this.phase = 'resting';
       this.restTimer = this.config.restDuration;
       onWaveComplete?.(this.wave);

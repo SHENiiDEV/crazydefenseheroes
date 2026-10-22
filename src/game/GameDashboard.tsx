@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GameCanvas } from './GameCanvas';
-import { PlayerState, upgradeTowerApi, openChestApi } from '../lib/api';
+import { PlayerState, CompanyInfo, GameRules, ChestOption, getGameRules, useBoostApi, upgradeTowerApi, openChestApi } from '../lib/api';
+import { LegalModal, LegalDocType } from './components/LegalModal';
 import { TowerTypeId } from './types';
 import { TOWER_CONFIGS } from './entities/Tower';
 import { ChestArt } from './components/ChestArt';
@@ -9,61 +10,6 @@ import { TowerEmblem } from './components/TowerEmblem';
 
 type Tab = 'battle' | 'vault' | 'arsenal' | 'treasury';
 
-type ChestOption = {
-  id: 'bronze' | 'silver' | 'gold';
-  name: string;
-  nameRu: string;
-  costCoins: number;
-  costDiamonds: number;
-  badge: string;
-  description: string;
-  descriptionRu: string;
-  color: string;
-  possibleLoot: string[];
-  possibleLootRu: string[];
-};
-
-const CHEST_OPTIONS: ChestOption[] = [
-  {
-    id: 'bronze',
-    name: 'Bronze Stash',
-    nameRu: 'Бронзовый сундук',
-    costCoins: 50,
-    costDiamonds: 0,
-    badge: 'STARTER',
-    description: 'A solid starter pack with essential tower upgrade cards and bonus coins.',
-    descriptionRu: 'Базовый набор со стартовыми картами башен и бонусными монетами.',
-    color: '#bc7853',
-    possibleLoot: ['50-150 Soft Currency', '1x Ember Archer Card (+1 Lvl)', '1x Speed Boost'],
-    possibleLootRu: ['50-150 Монет', '1x Карта Ember Archer (+1 Ур)', '1x Скоростной буст'],
-  },
-  {
-    id: 'silver',
-    name: 'Silver Cache',
-    nameRu: 'Серебряный тайник',
-    costCoins: 120,
-    costDiamonds: 0,
-    badge: 'TACTICAL',
-    description: 'Tactical supply with high chance of rare tower cards and diamond rewards.',
-    descriptionRu: 'Тактический набор с высоким шансом редких карт и кристаллами.',
-    color: '#8f9a96',
-    possibleLoot: ['150-300 Soft Currency', '5 Diamonds', '1x Stone Warden Card (+1 Lvl)', '2x Fortify Boost'],
-    possibleLootRu: ['150-300 Монет', '5 Кристаллов', '1x Карта Stone Warden (+1 Ур)', '2x Буст защиты'],
-  },
-  {
-    id: 'gold',
-    name: 'Gold Legendary Chest',
-    nameRu: 'Золотой легендарный сундук',
-    costCoins: 250,
-    costDiamonds: 10,
-    badge: 'LEGENDARY',
-    description: 'The ultimate royal vault. Guaranteed legendary drops, huge diamond sacks and cards.',
-    descriptionRu: 'Королевская сокровищница. Гарантированный редкий дроп, кристаллы и карты.',
-    color: '#d6a64d',
-    possibleLoot: ['300-800 Soft Currency', '20 Diamonds', '1x Vault Mage Arcane Card (+1 Lvl)', '3x Meteor Charges'],
-    possibleLootRu: ['300-800 Монет', '20 Кристаллов', '1x Карта Vault Mage (+1 Ур)', '3x Метеорных удара'],
-  },
-];
 
 type RosterTowerInfo = {
   type: TowerTypeId;
@@ -120,12 +66,14 @@ type LootResult = {
 
 export function GameDashboard({
   player,
+  company,
   initialTab = 'battle',
   onUpdatePlayer,
   onBackToLanding,
   onLogout,
 }: {
   player: PlayerState;
+  company: CompanyInfo;
   initialTab?: 'battle' | 'treasury';
   onUpdatePlayer: (updater: (prev: PlayerState) => PlayerState) => void;
   onBackToLanding: () => void;
@@ -139,6 +87,20 @@ export function GameDashboard({
   const [openingChest, setOpeningChest] = useState<string | null>(null);
   const [lootResult, setLootResult] = useState<LootResult | null>(null);
   const [feedbackNotice, setFeedbackNotice] = useState('');
+  const [rules, setRules] = useState<GameRules | null>(null);
+  const [rulesError, setRulesError] = useState('');
+  const [actionBusy, setActionBusy] = useState(false);
+  const actionLock = useRef(false);
+  const [runKey, setRunKey] = useState(0);
+  const [gameOverWave, setGameOverWave] = useState<number | null>(null);
+  const [battleState, setBattleState] = useState({ lives: 20, enemies: 0, towers: 0 });
+  const [syncStatus, setSyncStatus] = useState('Completed-wave rewards are saved to your account.');
+  const [boostCommand, setBoostCommand] = useState<{ id: number; code: string } | null>(null);
+  const [legalTab, setLegalTab] = useState<LegalDocType | null>(null);
+  const ownedTowerTypes = player.inventory.tower_cards.filter((card) => card.quantity > 0).map((card) => card.code as TowerTypeId);
+  useEffect(() => {
+    getGameRules().then(setRules).catch((error: Error) => setRulesError(error.message));
+  }, []);
 
   const showFeedback = (msg: string) => {
     setFeedbackNotice(msg);
@@ -157,201 +119,65 @@ export function GameDashboard({
     'vault-mage': getTowerLevel('vault-mage'),
   };
 
-  const handleOpenChest = async (chest: ChestOption) => {
-    const currentCoins = player.wallet?.soft_currency ?? 0;
-    const currentDiamonds = player.wallet?.diamonds ?? 0;
-
-    if (chest.costDiamonds > 0 && currentDiamonds < chest.costDiamonds) {
-      showFeedback(
-        language === 'RU'
-          ? `Недостаточно кристаллов (нужно ${chest.costDiamonds})! Нажмите «+ Пополнить».`
-          : `Need ${chest.costDiamonds} diamonds! Open Top-Up to refill.`,
-      );
-      return;
-    }
-    if (chest.costCoins > 0 && currentCoins < chest.costCoins) {
-      showFeedback(
-        language === 'RU'
-          ? `Недостаточно монет (нужно ${chest.costCoins})! Пополните баланс в Казне.`
-          : `Need ${chest.costCoins} coins! Refill coins in Top-Up.`,
-      );
-      return;
-    }
-
-    setOpeningChest(chest.id);
-
+  const requireToken = () => {
     const token = window.localStorage.getItem('cdh.token');
-    if (token) {
-      try {
-        const res = await openChestApi(token, chest.id);
-        setTimeout(() => {
-          onUpdatePlayer(() => res.player);
-          setOpeningChest(null);
-
-          const cardCode = res.loot.card_code as TowerTypeId;
-          const config = TOWER_CONFIGS[cardCode];
-          const tName = config ? (language === 'RU' ? config.nameRu : config.name) : cardCode;
-          const cardLevel = res.loot.new_level ?? res.player.inventory?.tower_cards?.find((c) => c.code === cardCode)?.level ?? 1;
-          const cardLabel = res.loot.was_new
-            ? `${tName} (${language === 'RU' ? 'Разблокирована! LVL ' + cardLevel : 'Unlocked! LVL ' + cardLevel})`
-            : `${tName} (+1 Level → LVL ${cardLevel})`;
-
-          setLootResult({
-            chestId: chest.id,
-            chestName: language === 'RU' ? chest.nameRu : chest.name,
-            coins: res.loot.coins,
-            diamonds: res.loot.diamonds,
-            cardName: cardLabel,
-            boost:
-              res.loot.boost_code === 'speed-burst'
-                ? (language === 'RU' ? 'Ускорение стрельбы ×1' : 'Speed Burst ×1')
-                : res.loot.boost_code === 'fortify'
-                  ? (language === 'RU' ? 'Усиление брони ×2' : 'Armor Fortify ×2')
-                  : (language === 'RU' ? 'Метеоритный удар ×3' : 'Meteor Strike ×3'),
-          });
-        }, 800);
-        return;
-      } catch {
-        // Fallback to local state
-      }
-    }
-
-    // Local optimistic update
-    setTimeout(() => {
-      let coinsGained = 0;
-      let diamondsGained = 0;
-      let cardCode: TowerTypeId = 'ember-archer';
-      let boost = '';
-
-      if (chest.id === 'bronze') {
-        coinsGained = Math.floor(Math.random() * 80) + 60;
-        cardCode = 'ember-archer';
-        boost = language === 'RU' ? 'Ускорение стрельбы ×1' : 'Speed Burst ×1';
-      } else if (chest.id === 'silver') {
-        coinsGained = Math.floor(Math.random() * 150) + 120;
-        diamondsGained = 5;
-        cardCode = 'stone-warden';
-        boost = language === 'RU' ? 'Усиление брони ×2' : 'Armor Fortify ×2';
-      } else {
-        coinsGained = Math.floor(Math.random() * 350) + 250;
-        diamondsGained = 20;
-        cardCode = 'vault-mage';
-        boost = language === 'RU' ? 'Метеоритный удар ×3' : 'Meteor Strike ×3';
-      }
-
-      const existingCards = player.inventory?.tower_cards ?? [];
-      const hasCard = existingCards.some((c) => c.code === cardCode);
-      const existingLevel = existingCards.find((c) => c.code === cardCode)?.level ?? 0;
-      const nextLevel = hasCard ? existingLevel + 1 : 1;
-
-      const config = TOWER_CONFIGS[cardCode];
-      const tName = config ? (language === 'RU' ? config.nameRu : config.name) : cardCode;
-      const cardName = hasCard
-        ? `${tName} (+1 Level → LVL ${nextLevel})`
-        : `${tName} (${language === 'RU' ? 'Разблокирована! LVL 1' : 'Unlocked! LVL 1'})`;
-
-      onUpdatePlayer((prev) => {
-        const oldWallet = prev.wallet ?? { id: 1, diamonds: 0, soft_currency: 0 };
-        const prevCards = prev.inventory?.tower_cards ?? [];
-        const found = prevCards.some((c) => c.code === cardCode);
-        const updatedCards = found
-          ? prevCards.map((c) => (c.code === cardCode ? { ...c, level: c.level + 1, quantity: c.quantity + 1 } : c))
-          : [...prevCards, { id: Date.now(), code: cardCode, level: 1, quantity: 1, is_equipped: true }];
-
-        const oldSlots = prev.loadout?.slots ?? ['ember-archer'];
-        const updatedSlots = oldSlots.includes(cardCode) ? oldSlots : [...oldSlots, cardCode];
-
-        return {
-          ...prev,
-          wallet: {
-            ...oldWallet,
-            soft_currency: Math.max(0, oldWallet.soft_currency - chest.costCoins + coinsGained),
-            diamonds: Math.max(0, oldWallet.diamonds - chest.costDiamonds + diamondsGained),
-          },
-          inventory: {
-            ...prev.inventory,
-            tower_cards: updatedCards,
-          },
-          loadout: {
-            id: prev.loadout?.id ?? 1,
-            slots: updatedSlots,
-          },
-        };
-      });
-
-      setOpeningChest(null);
-      setLootResult({
-        chestId: chest.id,
-        chestName: language === 'RU' ? chest.nameRu : chest.name,
-        coins: coinsGained,
-        diamonds: diamondsGained,
-        cardName,
-        boost,
-      });
-    }, 800);
+    if (!token) throw new Error('Please sign in again. No inventory changes have been made.');
+    return token;
   };
 
-  const handleUpgradeTower = async (code: TowerTypeId) => {
-    const currentLevel = getTowerLevel(code);
-    const cost = currentLevel * 80;
-    const currentCoins = player.wallet?.soft_currency ?? 0;
-    if (currentCoins < cost) {
-      showFeedback(
-        language === 'RU'
-          ? `Недостаточно монет для улучшения (нужно ${cost})! Пополните баланс в Казне.`
-          : `Need ${cost} coins to upgrade tower! Refill coins in Top-Up.`,
-      );
-      return;
+  const handleOpenChest = async (chest: ChestOption) => {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setActionBusy(true);
+    setOpeningChest(chest.id);
+    try {
+      const res = await openChestApi(requireToken(), chest.id);
+      onUpdatePlayer(() => res.player);
+      setLootResult({
+        chestId: chest.id, chestName: chest.name, coins: res.loot.coins, diamonds: res.loot.diamonds,
+        cardName: chest.card_name + (res.loot.was_new ? ' unlocked (Level 1)' : ' upgraded to Level ' + res.loot.new_level),
+        boost: res.loot.boost_quantity + ' × ' + chest.boost_name,
+      });
+    } catch (error) {
+      showFeedback((error as Error).message);
+    } finally {
+      actionLock.current = false;
+      setOpeningChest(null);
+      setActionBusy(false);
     }
+  };
 
-    const token = window.localStorage.getItem('cdh.token');
-    if (token) {
-      try {
-        const updated = await upgradeTowerApi(token, code);
-        onUpdatePlayer(() => updated);
-        showFeedback(
-          language === 'RU'
-            ? `Башня «${TOWER_CONFIGS[code].nameRu}» успешно улучшена до LVL ${currentLevel + 1}! (+25% урона, +8% скорости)`
-            : `Tower «${TOWER_CONFIGS[code].name}» upgraded to LVL ${currentLevel + 1}! (+25% damage, +8% speed)`,
-        );
-        return;
-      } catch {
-        // Fallback to local state
-      }
+  const handleUpgradeTower = async (code: TowerTypeId, currency: 'gold' | 'diamonds' = 'gold') => {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setActionBusy(true);
+    try {
+      const updated = await upgradeTowerApi(requireToken(), code, currency);
+      onUpdatePlayer(() => updated);
+      showFeedback(TOWER_CONFIGS[code].name + ' upgraded. Account inventory saved.');
+    } catch (error) {
+      showFeedback((error as Error).message);
+    } finally {
+      actionLock.current = false;
+      setActionBusy(false);
     }
+  };
 
-    // Local optimistic update
-    onUpdatePlayer((prev) => {
-      const oldWallet = prev.wallet ?? { id: 1, diamonds: 0, soft_currency: 0 };
-      const existingCards = prev.inventory.tower_cards ?? [];
-      const hasCard = existingCards.some((c) => c.code === code);
-      const cards = hasCard
-        ? existingCards.map((card) =>
-            card.code === code ? { ...card, level: card.level + 1 } : card,
-          )
-        : [
-            ...existingCards,
-            { id: Date.now(), code, level: 2, quantity: 1, is_equipped: true },
-          ];
-
-      return {
-        ...prev,
-        wallet: {
-          ...oldWallet,
-          soft_currency: Math.max(0, oldWallet.soft_currency - cost),
-        },
-        inventory: {
-          ...prev.inventory,
-          tower_cards: cards,
-        },
-      };
-    });
-
-    showFeedback(
-      language === 'RU'
-        ? `Башня «${TOWER_CONFIGS[code].nameRu}» успешно улучшена до LVL ${currentLevel + 1}! (+25% урона, +8% скорости)`
-        : `Tower «${TOWER_CONFIGS[code].name}» upgraded to LVL ${currentLevel + 1}! (+25% damage, +8% speed)`,
-    );
+  const activateBoost = async (code: string) => {
+    if (actionLock.current || gameOverWave !== null) return;
+    actionLock.current = true;
+    setActionBusy(true);
+    try {
+      const updated = await useBoostApi(requireToken(), code);
+      onUpdatePlayer(() => updated);
+      setBoostCommand({ id: Date.now(), code });
+      showFeedback('One charge consumed. ' + (rules?.boosts[code]?.description ?? 'Boost activated.'));
+    } catch (error) {
+      showFeedback((error as Error).message);
+    } finally {
+      actionLock.current = false;
+      setActionBusy(false);
+    }
   };
 
   return (
@@ -493,6 +319,8 @@ export function GameDashboard({
                         key={t.type}
                         type="button"
                         className={`tower-select-btn tower-btn-${t.color} ${isActive ? 'active-tower' : ''}`}
+                        disabled={!ownedTowerTypes.includes(t.type)}
+                        title={!ownedTowerTypes.includes(t.type) ? 'Unlock in the Chest Vault first' : 'Deploy using battle Supply'}
                         onClick={() => setSelectedBuildType(t.type)}
                       >
                         <TowerEmblem type={t.color} mini />
@@ -500,7 +328,7 @@ export function GameDashboard({
                           <b>
                             {cfg.name} <span className="tower-mini-lvl">LVL {lvl}</span>
                           </b>
-                          <small>{cfg.cost} <i className="fa-solid fa-coins" style={{ color: '#d4ac0d', fontSize: '0.85em' }} /></small>
+                          <small>{cfg.cost} Supply</small>
                         </span>
                         {isActive && <span className="tower-btn-badge">✓</span>}
                       </button>
@@ -514,7 +342,7 @@ export function GameDashboard({
                   <i className="fa-regular fa-lightbulb" style={{ color: '#f39c12', marginRight: 5 }} />
                   {language === 'RU'
                     ? `Выбрано: ${TOWER_CONFIGS[selectedBuildType].nameRu} (LVL ${towerLevels[selectedBuildType]}, ${TOWER_CONFIGS[selectedBuildType].cost} монет). Клик по светлой клетке строит башню!`
-                    : `Selected: ${TOWER_CONFIGS[selectedBuildType].name} (LVL ${towerLevels[selectedBuildType]}, ${TOWER_CONFIGS[selectedBuildType].cost} coins). Click pale tile to build!`}
+                    : `Selected: ${TOWER_CONFIGS[selectedBuildType].name} (LVL ${towerLevels[selectedBuildType]}, ${TOWER_CONFIGS[selectedBuildType].cost} battle Supply). Click pale tile to build!`}
                 </span>
                 <span>
                   <i className="fa-solid fa-crosshairs" style={{ color: '#3498db', marginRight: 5 }} />
@@ -527,11 +355,29 @@ export function GameDashboard({
 
             <div className="game-canvas-wrapper">
               <GameCanvas
-                paused={activeTab !== 'battle' || isManualPaused}
+                key={runKey}
+                paused={activeTab !== 'battle' || isManualPaused || actionBusy}
                 selectedTowerType={selectedBuildType}
                 towerLevels={towerLevels}
+                ownedTowerTypes={ownedTowerTypes}
+                accountUserId={player.user.id}
+                onWalletUpdated={(wallet) => onUpdatePlayer((previous) => ({ ...previous, wallet }))}
+                onSyncStatus={setSyncStatus}
+                onGameOver={setGameOverWave}
+                onBattleStateChange={setBattleState}
+                boostCommand={boostCommand}
               />
             </div>
+            <div className="battle-account-status"><p role="status">{syncStatus}</p>
+              <p>Battle Supply is a temporary deployment budget. Account Gold is saved separately and is used in the Vault and Arsenal.</p>
+              {gameOverWave !== null && <><p role="status">Run ended on wave {gameOverWave}. Survive longer next time; saved account items remain yours.</p>
+                <button className="button button-orange" onClick={() => { setBoostCommand(null); setGameOverWave(null); setIsManualPaused(false); setRunKey((value) => value + 1); }}>Start a new run</button></>}
+            </div>
+            <div className="battle-boosts"><h3>Use your boosts</h3>{rules && Object.entries(rules.boosts).map(([code, boost]) => {
+              const quantity = player.inventory.boosts.find((item) => item.code === code)?.quantity ?? 0;
+              const notReady = (code === 'fortify' && battleState.lives >= 20) || (code === 'meteor-strike' && battleState.enemies === 0) || (code === 'speed-burst' && battleState.towers === 0);
+              return <button key={code} type="button" title={boost.description} disabled={quantity < 1 || actionBusy || gameOverWave !== null || notReady} onClick={() => activateBoost(code)}>{boost.name} × {quantity}<small>{boost.description}{notReady ? ' Wait until this effect can be used.' : ''}</small></button>;
+            })}</div>
           </div>
 
           {/* Side deck & live info */}
@@ -554,7 +400,7 @@ export function GameDashboard({
                     <div
                       key={t.type}
                       className={`deck-card deck-card-${t.color} clickable-deck-card ${isActive ? 'selected-deck-card' : ''}`}
-                      onClick={() => setSelectedBuildType(t.type)}
+                      onClick={() => { if (ownedTowerTypes.includes(t.type)) setSelectedBuildType(t.type); }}
                       role="button"
                       tabIndex={0}
                     >
@@ -562,11 +408,11 @@ export function GameDashboard({
                       <div className="deck-card-info">
                         <div className="deck-card-title-row">
                           <b>{cfg.name}</b>
-                          <span className="deck-card-lvl-pill">LVL {lvl}</span>
+                        <span className="deck-card-lvl-pill">{ownedTowerTypes.includes(t.type) ? `LVL ${lvl}` : 'LOCKED'}</span>
                         </div>
                         <small>{language === 'RU' ? t.roleRu : t.role}</small>
                         <span className="deck-card-stat">
-                          {curDmg} dmg • {cfg.cost} <i className="fa-solid fa-coins" style={{ color: '#d4ac0d', fontSize: '0.85em' }} />
+                          {curDmg} dmg • {cfg.cost} Supply
                         </span>
                       </div>
                       <span className="deck-card-tag">
@@ -589,7 +435,7 @@ export function GameDashboard({
               <p>
                 {language === 'RU'
                   ? 'Открывайте сундуки в сокровищнице, чтобы повышать уровни башен и пополнять кристаллы.'
-                  : 'Open chests in the Vault to unlock card levels, boosts and currency.'}
+                  : 'Open fixed-content chests to unlock towers, add card levels and receive usable boosts.'}
               </p>
               <div className="side-card-btns">
                 <button className="button button-orange" onClick={() => setActiveTab('vault')}>
@@ -611,15 +457,17 @@ export function GameDashboard({
               <p>
                 {language === 'RU'
                   ? 'Открывайте сундуки, получайте золото, редкие кристаллы и повышайте уровень своих боевых башен.'
-                  : 'Unlock tactical and legendary chests to claim card upgrades, boosts, and riches.'}
+                  : 'Spend account currency on the exact card and boost charges shown below. Chests do not return Gold or Diamonds.'}
               </p>
             </div>
 
             <div className="chests-grid">
-              {CHEST_OPTIONS.map((chest) => (
+              {rulesError && <p role="alert">{rulesError}</p>}
+              {!rules && !rulesError && <p role="status">Loading chest contents…</p>}
+              {Object.values(rules?.chests ?? {}).map((chest) => (
                 <div className={`chest-card chest-card-${chest.id}`} key={chest.id}>
-                  <div className="chest-badge" style={{ backgroundColor: chest.color }}>
-                    {chest.badge}
+                  <div className="chest-badge">
+                    FIXED CONTENTS
                   </div>
 
                   {/* Landing page style ChestArt on glowing pedestal */}
@@ -628,32 +476,30 @@ export function GameDashboard({
                     <ChestArt kind={chest.id} />
                   </div>
 
-                  <h3>{language === 'RU' ? chest.nameRu : chest.name}</h3>
+                  <h3>{chest.name}</h3>
                   <p className="chest-desc">
-                    {language === 'RU' ? chest.descriptionRu : chest.description}
+                    Unlock {chest.card_name}, or add one level if already owned. Includes {chest.boost_quantity} {chest.boost_name} charge(s).
                   </p>
 
                   <div className="loot-preview">
-                    <b>{language === 'RU' ? 'Возможная добыча:' : 'Potential Drops:'}</b>
+                    <b>Guaranteed contents — no random rewards</b>
                     <ul>
-                      {(language === 'RU' ? chest.possibleLootRu : chest.possibleLoot).map(
-                        (item, idx) => (
-                          <li key={idx}>✦ {item}</li>
-                        ),
-                      )}
+                      <li>1 {chest.card_name} card: unlock or +1 level</li>
+                      <li>{chest.boost_quantity} × {chest.boost_name}</li>
+                      <li>No Gold or Diamonds returned</li>
                     </ul>
                   </div>
 
                   <div className="chest-price-row">
                     <span className="price-tag">
-                      {chest.costCoins > 0 && (
+                      {chest.cost_gold > 0 && (
                         <span>
-                          {chest.costCoins} <i className="fa-solid fa-coins" style={{ color: '#d4ac0d', fontSize: '0.85em', marginRight: 4 }} />
+                          {chest.cost_gold} Gold
                         </span>
                       )}
-                      {chest.costDiamonds > 0 && (
+                      {chest.cost_diamonds > 0 && (
                         <span>
-                          {chest.costDiamonds} <i className="fa-solid fa-gem" style={{ color: '#2980b9', fontSize: '0.85em' }} />
+                          {chest.cost_gold > 0 ? ' + ' : ''}{chest.cost_diamonds} Diamonds
                         </span>
                       )}
                     </span>
@@ -661,7 +507,7 @@ export function GameDashboard({
 
                   <button
                     className="button button-orange chest-open-btn"
-                    disabled={openingChest !== null}
+                    disabled={actionBusy}
                     onClick={() => handleOpenChest(chest)}
                   >
                     {openingChest === chest.id
@@ -746,12 +592,16 @@ export function GameDashboard({
                     <button
                       type="button"
                       className="button button-orange roster-upgrade-action-btn"
+                      disabled={actionBusy || !ownedTowerTypes.includes(tower.type)}
                       onClick={() => handleUpgradeTower(tower.type)}
                     >
                       <i className="fa-solid fa-arrow-up" style={{ marginRight: 6 }} />
                       {language === 'RU'
                         ? `Улучшить до LVL ${lvl + 1} (${cost})`
-                        : `Upgrade to LVL ${lvl + 1} (${cost})`} <i className="fa-solid fa-coins" style={{ marginLeft: 4, color: '#d4ac0d' }} />
+                        : `Upgrade to LVL ${lvl + 1} (${cost} Gold)`}
+                    </button>
+                    <button type="button" className="button button-dark roster-upgrade-action-btn" disabled={actionBusy || !ownedTowerTypes.includes(tower.type)} onClick={() => handleUpgradeTower(tower.type, 'diamonds')}>
+                      {ownedTowerTypes.includes(tower.type) ? `Upgrade for ${lvl * (rules?.upgrade_diamonds_per_level ?? 5)} Diamonds` : 'Unlock this tower in the Chest Vault'}
                     </button>
                   </article>
                 );
@@ -783,12 +633,12 @@ export function GameDashboard({
             </div>
 
             <div className="loot-rewards-grid">
-              <div className="reward-box">
+              {lootResult.coins > 0 && <div className="reward-box">
                 <span className="reward-val">
                   +{lootResult.coins} <i className="fa-solid fa-coins" style={{ color: '#d4ac0d', fontSize: '0.85em' }} />
                 </span>
                 <small>{language === 'RU' ? 'Монеты' : 'Coins'}</small>
-              </div>
+              </div>}
               {lootResult.diamonds > 0 && (
                 <div className="reward-box">
                   <span className="reward-val">
@@ -819,7 +669,12 @@ export function GameDashboard({
         </div>
       )}
 
-      {/* Top Up Modal */}
+      <footer className="member-company-footer">
+        <strong>{company.name}</strong><span>Company registration number: {company.number}</span><span>Registered address: {company.address}</span>
+        <a href={`mailto:${company.email}`}>{company.email}</a><a href={`https://${company.domain}`}>{company.domain}</a>
+        <nav aria-label="Member legal information">{(['terms', 'privacy', 'refunds', 'security'] as LegalDocType[]).map((tab) => <button key={tab} onClick={() => setLegalTab(tab)}>{({ terms: 'Terms & Conditions', privacy: 'Privacy Policy', refunds: 'Delivery & Refunds', security: 'Security' })[tab]}</button>)}</nav>
+      </footer>
+      {legalTab && <LegalModal initialTab={legalTab} company={company} onClose={() => setLegalTab(null)} />}
 
       {feedbackNotice && (
         <div className="toast" role="status">

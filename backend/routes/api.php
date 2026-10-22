@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\CountriesController;
 use App\Http\Controllers\Api\V1\EndlessProgressController;
+use App\Http\Controllers\Api\V1\GameRulesController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\LoginController;
@@ -13,10 +14,13 @@ use App\Http\Controllers\Api\V1\PlayerStateController;
 use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\TopUpController;
 use App\Http\Controllers\Api\V1\VerifyEmailController;
+use App\Http\Controllers\LegalDocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('/health', HealthController::class)->middleware('throttle:api')->name('api.v1.health');
+    Route::get('/game/rules', GameRulesController::class)->middleware('throttle:api')->name('api.v1.game.rules');
+    Route::get('/legal/{document}', [LegalDocumentController::class, 'show'])->whereIn('document', ['terms', 'privacy', 'refunds', 'security'])->middleware('throttle:api');
     Route::get('/company', fn () => response()->json([
         'success' => true,
         'data' => config('company'),
@@ -41,6 +45,7 @@ Route::prefix('v1')->group(function (): void {
         Route::put('/me/loadout', [PlayerStateController::class, 'updateLoadout'])->name('api.v1.me.loadout');
         Route::post('/me/towers/upgrade', [PlayerStateController::class, 'upgradeTower'])->name('api.v1.me.towers.upgrade');
         Route::post('/me/chests/open', [PlayerStateController::class, 'openChest'])->name('api.v1.me.chests.open');
+        Route::post('/me/boosts/use', [PlayerStateController::class, 'useBoost'])->name('api.v1.me.boosts.use');
         Route::get('/me/topup', [TopUpController::class, 'show'])->name('api.v1.me.topup');
         Route::post('/me/topup', [TopUpController::class, 'store'])->name('api.v1.me.topup.store');
         Route::post('/me/wallet/topup', [TopUpController::class, 'retired'])->name('api.v1.me.wallet.topup');

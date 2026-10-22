@@ -22,6 +22,8 @@ export type WaveCheckpointPayload = {
 type TowerDefenseGameOptions = {
   onWaveCheckpoint?: (payload: WaveCheckpointPayload) => void;
   onSelectedTowerTypeChange?: (type: TowerTypeId) => void;
+  onGameOver?: (wave: number) => void;
+  onBattleStateChange?: (state: { lives: number; enemies: number; towers: number }) => void;
 };
 
 const DEFAULT_MATRIX = [
@@ -74,6 +76,10 @@ export class TowerDefenseGame {
   private readonly runId = createRunId();
   private lastCheckpointWave = 0;
   private isPaused = false;
+  private isGameOver = false;
+  private speedBurstRemaining = 0;
+  private ownedTowerTypes: TowerTypeId[] = ['ember-archer', 'stone-warden', 'vault-mage'];
+  private lastBattleState = '';
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -93,6 +99,7 @@ export class TowerDefenseGame {
   }
 
   start(): void {
+    this.publishBattleState();
     this.loop.start();
   }
 
@@ -116,11 +123,34 @@ export class TowerDefenseGame {
     this.selectedBuildTowerType = type;
     const config = TOWER_CONFIGS[type];
     const lvl = this.towerLevels[type] ?? 1;
-    this.statusMessage = `Ready to place ${config.name} (Lvl ${lvl}, ${config.cost}G).`;
+    this.statusMessage = `Ready to place ${config.name} (Lvl ${lvl}, ${config.cost} Supply).`;
   }
 
   setTowerLevels(levels: Record<TowerTypeId, number>): void {
     this.towerLevels = { ...this.towerLevels, ...levels };
+    this.towers.forEach((tower) => tower.upgradeToLevel(this.towerLevels[tower.towerType]));
+  }
+
+  setOwnedTowerTypes(types: TowerTypeId[]): void {
+    this.ownedTowerTypes = types;
+  }
+
+  applyBoost(code: string): void {
+    if (this.isGameOver) return;
+    if (code === 'speed-burst') this.speedBurstRemaining = 10;
+    if (code === 'fortify') this.lives = Math.min(20, this.lives + 5);
+    if (code === 'meteor-strike') this.enemies.forEach((enemy) => enemy.takeDamage(100));
+    this.statusMessage = 'Boost activated: ' + code;
+    this.publishBattleState();
+  }
+
+  private publishBattleState(): void {
+    const state = { lives: this.lives, enemies: this.enemies.filter((enemy) => enemy.isAlive).length, towers: this.towers.length };
+    const signature = JSON.stringify(state);
+    if (signature !== this.lastBattleState) {
+      this.lastBattleState = signature;
+      this.options.onBattleStateChange?.(state);
+    }
   }
 
   getSelectedBuildTowerType(): TowerTypeId {
@@ -133,20 +163,29 @@ export class TowerDefenseGame {
   }
 
   private readonly update = (deltaTime: number): void => {
-    if (this.isPaused) {
+    if (this.isPaused || this.isGameOver) {
       return;
     }
 
-    this.elapsedMilliseconds += deltaTime * 1000;
-    this.waveManager.update(deltaTime, this.spawnEnemy, this.handleWaveComplete);
+    this.elapsedMilliseconds += deltaTime * 1000 * (this.speedBurstRemaining > 0 ? 2 : 1);
+    this.speedBurstRemaining = Math.max(0, this.speedBurstRemaining - deltaTime);
+    this.waveManager.update(deltaTime, this.spawnEnemy, this.handleWaveComplete, () => this.enemies.length > 0);
 
     for (let index = this.enemies.length - 1; index >= 0; index -= 1) {
       const enemy = this.enemies[index];
+      if (!enemy.isAlive) continue;
 
       if (enemy.move(deltaTime, this.path.points) === 'reached-end') {
         this.lives = Math.max(0, this.lives - 1);
         this.statusMessage = 'A monster breached the keep! Defend!';
         this.enemies.splice(index, 1);
+        if (this.lives === 0) {
+          this.isGameOver = true;
+          this.statusMessage = 'The keep has fallen. Account rewards from completed waves are saved.';
+          this.options.onGameOver?.(this.waveManager.getState().wave);
+          this.publishBattleState();
+          return;
+        }
       }
     }
 
@@ -170,10 +209,11 @@ export class TowerDefenseGame {
         }
       }
     }
+    this.publishBattleState();
   };
 
   private readonly handleWaveComplete = (wave: number): void => {
-    if (wave <= this.lastCheckpointWave) {
+    if (this.isGameOver || this.lives === 0 || wave <= this.lastCheckpointWave) {
       return;
     }
 
@@ -216,6 +256,7 @@ export class TowerDefenseGame {
   };
 
   private readonly handleCanvasClick = (event: MouseEvent): void => {
+    if (this.isPaused || this.isGameOver) return;
     const bounds = this.canvas.getBoundingClientRect();
     const point = {
       x: (event.clientX - bounds.left) * (this.canvas.width / bounds.width),
@@ -239,8 +280,12 @@ export class TowerDefenseGame {
       }
 
       const config = TOWER_CONFIGS[this.selectedBuildTowerType];
+      if (!this.ownedTowerTypes.includes(this.selectedBuildTowerType)) {
+        this.statusMessage = 'Unlock this tower in the Chest Vault first.';
+        return;
+      }
       if (this.gold < config.cost) {
-        this.statusMessage = `Need ${config.cost} gold for ${config.name}.`;
+        this.statusMessage = `Need ${config.cost} battle Supply for ${config.name}.`;
         return;
       }
 
@@ -259,6 +304,7 @@ export class TowerDefenseGame {
       this.gold -= config.cost;
       this.selectedTowerId = towerId;
       this.statusMessage = `${config.name} (Lvl ${level}) deployed. Click to cycle target mode.`;
+      this.publishBattleState();
     }
   };
 
@@ -290,7 +336,7 @@ export class TowerDefenseGame {
     context.font = '700 12px monospace';
     context.fillText('WAVE ' + String(state.wave).padStart(2, '0'), x, y);
     context.fillStyle = '#f2c864';
-    context.fillText('GOLD ' + String(this.gold).padStart(3, '0'), 106, y);
+    context.fillText('SUPPLY ' + String(this.gold).padStart(3, '0'), 106, y);
     context.fillStyle = '#f2a8a0';
     context.fillText('LIVES ' + String(this.lives).padStart(2, '0'), 210, y);
     context.fillStyle = '#dbd3b2';
@@ -306,7 +352,18 @@ export class TowerDefenseGame {
     context.fillText(this.statusMessage, 18, this.canvas.height - 12);
     context.fillText('DEFEATED: ' + String(this.defeated), this.canvas.width - 130, this.canvas.height - 12);
 
-    if (this.isPaused) {
+    if (this.isGameOver) {
+      context.save();
+      context.fillStyle = 'rgba(48, 54, 47, .9)';
+      context.fillRect(0, this.canvas.height / 2 - 48, this.canvas.width, 96);
+      context.fillStyle = '#fff5d4';
+      context.font = 'bold 24px serif';
+      context.textAlign = 'center';
+      context.fillText('THE KEEP HAS FALLEN', this.canvas.width / 2, this.canvas.height / 2);
+      context.font = '14px sans-serif';
+      context.fillText('Start a new run. Your account inventory is retained.', this.canvas.width / 2, this.canvas.height / 2 + 28);
+      context.restore();
+    } else if (this.isPaused) {
       context.save();
       context.fillStyle = 'rgba(216, 97, 49, .92)';
       context.fillRect(this.canvas.width / 2 - 55, 10, 110, 24);

@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function (): void {
     Route::get('/health', HealthController::class)->middleware('throttle:api')->name('api.v1.health');
     Route::get('/game/rules', GameRulesController::class)->middleware('throttle:api')->name('api.v1.game.rules');
+    Route::get('/legal/{document}/page', [LegalDocumentController::class, 'page'])
+        ->whereIn('document', ['terms', 'privacy', 'refunds', 'security'])
+        ->middleware('throttle:api')->name('api.v1.legal.page');
     Route::get('/legal/{document}', [LegalDocumentController::class, 'show'])->whereIn('document', ['terms', 'privacy', 'refunds', 'security'])->middleware('throttle:api');
     Route::get('/company', fn () => response()->json([
         'success' => true,

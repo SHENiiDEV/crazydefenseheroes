@@ -9,5 +9,9 @@
             <p>{{ $paragraph }}</p>
         @endforeach
     @endforeach
-    <nav><a href="/legal/terms">Terms &amp; Conditions</a> · <a href="/legal/privacy">Privacy Policy</a> · <a href="/legal/refunds">Delivery &amp; Refunds</a> · <a href="/legal/security">Security</a></nav>
+    <nav>
+        @foreach (['terms' => 'Terms & Conditions', 'privacy' => 'Privacy Policy', 'refunds' => 'Delivery & Refunds', 'security' => 'Security'] as $type => $label)
+            <a href="{{ route('api.v1.legal.page', ['document' => $type], false) }}">{{ $label }}</a>@unless ($loop->last) · @endunless
+        @endforeach
+    </nav>
 @endsection

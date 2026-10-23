@@ -15,7 +15,7 @@ export function LegalModal({ initialTab = 'terms', company = DEFAULT_COMPANY_INF
   const [activeTab, setActiveTab] = useState(initialTab);
   const [document, setDocument] = useState<LegalDocument | null>(null);
   const [error, setError] = useState('');
-  const fullPolicyUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, '') + '/legal/' + activeTab;
+  const fullPolicyUrl = API_BASE_URL.replace(/\/+$/, '') + '/legal/' + activeTab + '/page';
   useEffect(() => {
     const abort = new AbortController();
     setDocument(null);

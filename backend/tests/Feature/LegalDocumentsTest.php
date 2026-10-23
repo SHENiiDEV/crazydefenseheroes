@@ -13,13 +13,32 @@ class LegalDocumentsTest extends TestCase
         config(['company.name' => 'PROTECT YOUR ASSETS TODAY LTD', 'company.number' => '15969857']);
         $api = $this->getJson('/api/v1/legal/'.$type)->assertOk()->assertJsonPath('data.version', '2026-10-22');
         $page = $this->get('/legal/'.$type)->assertOk()->assertSee('PROTECT YOUR ASSETS TODAY LTD')->assertSee('15969857');
+        $fullPage = $this->get('/api/v1/legal/'.$type.'/page', ['Accept' => 'text/html'])
+            ->assertOk()->assertHeader('Content-Type', 'text/html; charset=utf-8')
+            ->assertSee('PROTECT YOUR ASSETS TODAY LTD')->assertSee('15969857');
 
         foreach ($api->json('data.sections') as $section) {
             $page->assertSee($section['title']);
+            $fullPage->assertSee($section['title']);
             foreach ($section['paragraphs'] as $paragraph) {
                 $page->assertSee($paragraph);
+                $fullPage->assertSee($paragraph);
             }
         }
+    }
+
+    public function test_full_policy_navigation_stays_under_the_working_api_prefix(): void
+    {
+        $page = $this->get('/api/v1/legal/terms/page')->assertOk();
+
+        foreach (['terms', 'privacy', 'refunds', 'security'] as $document) {
+            $page->assertSeeHtml('href="/api/v1/legal/'.$document.'/page"');
+        }
+    }
+
+    public function test_unknown_full_policy_page_returns_404(): void
+    {
+        $this->get('/api/v1/legal/nonexistent/page')->assertNotFound();
     }
 
     public static function documents(): array
@@ -50,5 +69,6 @@ class LegalDocumentsTest extends TestCase
     {
         config(['company.name' => '<script>alert(1)</script>']);
         $this->get('/legal/terms')->assertOk()->assertDontSee('<script>alert(1)</script>', false)->assertSee('&lt;script&gt;', false);
+        $this->get('/api/v1/legal/terms/page')->assertOk()->assertDontSee('<script>alert(1)</script>', false)->assertSee('&lt;script&gt;', false);
     }
 }

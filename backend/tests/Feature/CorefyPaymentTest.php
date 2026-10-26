@@ -71,6 +71,106 @@ class CorefyPaymentTest extends TestCase
         $this->assertDatabaseCount('wallet_transactions', 0);
     }
 
+    #[DataProvider('flowMethods')]
+    public function test_checkout_prefers_the_allowed_hpp_url_over_a_different_flow_action(string $method): void
+    {
+        Mail::fake();
+        Sanctum::actingAs($this->player());
+        Http::fake(['https://api.sterling-pay.com/payment-invoices' => Http::response([
+            'data' => ['id' => 'cpi_test', 'attributes' => [
+                'hpp_url' => 'https://api.sterling-pay.com/hpp/test',
+                'flow_data' => ['action' => 'https://checkout.s-pay.finance/pay/test', 'method' => $method],
+            ]]], 201)]);
+
+        $this->postJson('/api/v1/me/topup', $this->purchase())->assertOk()
+            ->assertJsonPath('data.order.checkout_url', 'https://api.sterling-pay.com/hpp/test')
+            ->assertJsonPath('data.order.status', 'pending')->assertJsonPath('data.wallet.diamonds', 10);
+
+        Http::assertSentCount(1);
+        $this->assertDatabaseCount('wallet_transactions', 0);
+        $this->assertDatabaseCount('invoices', 0);
+        Mail::assertNothingSent();
+    }
+
+    public static function flowMethods(): array
+    {
+        return ['GET' => ['GET'], 'POST' => ['POST']];
+    }
+
+    #[DataProvider('flowMethods')]
+    public function test_an_unsafe_hpp_url_only_falls_back_to_an_allowed_get_flow(string $method): void
+    {
+        Sanctum::actingAs($this->player());
+        Http::fake(['https://api.sterling-pay.com/payment-invoices' => Http::response([
+            'data' => ['id' => 'cpi_test', 'attributes' => [
+                'hpp_url' => 'https://attacker.example/pay',
+                'flow_data' => ['action' => 'https://api.sterling-pay.com/hpp/flow', 'method' => $method],
+            ]]], 201)]);
+
+        $response = $this->postJson('/api/v1/me/topup', $this->purchase());
+        if ($method === 'GET') {
+            $response->assertOk()->assertJsonPath('data.order.checkout_url', 'https://api.sterling-pay.com/hpp/flow');
+        } else {
+            $response->assertServiceUnavailable();
+            $this->assertDatabaseHas('orders', ['provider_payment_id' => 'cpi_test', 'checkout_url' => null]);
+        }
+        Http::assertSentCount(1);
+        $this->assertDatabaseCount('wallet_transactions', 0);
+    }
+
+    public function test_checking_a_pending_payment_restores_its_checkout_link_without_delivering_goods(): void
+    {
+        Mail::fake();
+        $order = $this->pendingOrder();
+        Sanctum::actingAs($order->user);
+        Http::fake(['https://api.sterling-pay.com/payment-invoices/cpi_test' => Http::response($this->invoice($order, [
+            'status' => 'process_pending', 'processed_amount' => 0,
+            'hpp_url' => 'https://api.sterling-pay.com/hpp/recovered',
+            'flow_data' => ['action' => 'https://checkout.s-pay.finance/pay/test', 'method' => 'GET'],
+        ]))]);
+
+        $this->postJson('/api/v1/me/orders/'.$order->id.'/payment-status')->assertOk()
+            ->assertJsonPath('data.order.status', 'pending')->assertJsonPath('data.order.provider_status', 'process_pending')
+            ->assertJsonPath('data.order.checkout_url', 'https://api.sterling-pay.com/hpp/recovered')
+            ->assertJsonPath('data.wallet.diamonds', 10);
+
+        Http::assertSentCount(1);
+        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
+        $this->assertDatabaseCount('wallet_transactions', 0);
+        $this->assertDatabaseCount('invoices', 0);
+        Mail::assertNothingSent();
+    }
+
+    public function test_checkout_retry_recovers_a_link_using_the_existing_invoice_without_another_provider_post(): void
+    {
+        Mail::fake();
+        Sanctum::actingAs($this->player());
+        Http::fake([
+            'https://api.sterling-pay.com/payment-invoices' => Http::response([
+                'data' => ['id' => 'cpi_test', 'attributes' => [
+                    'flow_data' => ['action' => 'https://checkout.s-pay.finance/pay/test', 'method' => 'GET'],
+                ]]], 201),
+            'https://api.sterling-pay.com/payment-invoices/cpi_test' => fn (): PromiseInterface => Http::response(
+                $this->invoice(Order::firstOrFail(), ['status' => 'process_pending', 'processed_amount' => 0,
+                    'hpp_url' => 'https://api.sterling-pay.com/hpp/recovered'])
+            ),
+        ]);
+
+        $this->postJson('/api/v1/me/topup', $this->purchase())->assertServiceUnavailable();
+        $order = Order::firstOrFail();
+        $this->postJson('/api/v1/me/topup', $this->purchase())->assertOk()
+            ->assertJsonPath('data.order.id', $order->id)
+            ->assertJsonPath('data.order.checkout_url', 'https://api.sterling-pay.com/hpp/recovered')
+            ->assertJsonPath('data.order.status', 'pending')->assertJsonPath('data.wallet.diamonds', 10);
+
+        Http::assertSentCount(2);
+        $this->assertCount(1, Http::recorded(fn (Request $request): bool => $request->method() === 'POST'));
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseCount('wallet_transactions', 0);
+        $this->assertDatabaseCount('invoices', 0);
+        Mail::assertNothingSent();
+    }
+
     public function test_verified_callback_credits_goods_and_sends_one_pdf_receipt_even_when_replayed(): void
     {
         Storage::fake('local');
@@ -244,13 +344,19 @@ class CorefyPaymentTest extends TestCase
     public function test_untrusted_checkout_links_are_rejected_without_creating_another_invoice(string $url): void
     {
         Sanctum::actingAs($this->player());
-        Http::fake(['https://api.sterling-pay.com/payment-invoices' => Http::response([
-            'data' => ['id' => 'cpi_test', 'attributes' => ['hpp_url' => $url]]], 201)]);
+        Http::fake([
+            'https://api.sterling-pay.com/payment-invoices' => Http::response([
+                'data' => ['id' => 'cpi_test', 'attributes' => ['hpp_url' => $url]]], 201),
+            'https://api.sterling-pay.com/payment-invoices/cpi_test' => fn (): PromiseInterface => Http::response(
+                $this->invoice(Order::firstOrFail(), ['status' => 'process_pending', 'processed_amount' => 0, 'hpp_url' => $url])
+            ),
+        ]);
 
         $this->postJson('/api/v1/me/topup', $this->purchase())->assertServiceUnavailable();
         $this->postJson('/api/v1/me/topup', $this->purchase())->assertServiceUnavailable();
 
-        Http::assertSentCount(1);
+        Http::assertSentCount(2);
+        $this->assertCount(1, Http::recorded(fn (Request $request): bool => $request->method() === 'POST'));
         $this->assertDatabaseHas('orders', ['provider_payment_id' => 'cpi_test', 'checkout_url' => null]);
         $this->assertDatabaseCount('wallet_transactions', 0);
     }

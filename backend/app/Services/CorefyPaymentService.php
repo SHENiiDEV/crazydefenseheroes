@@ -43,6 +43,8 @@ final class CorefyPaymentService
         });
         if ($create) {
             $order = $this->createInvoice($order);
+        } elseif ($order->status === 'pending' && ! $order->checkout_url && $order->provider_payment_id) {
+            $order = $this->synchronise($order);
         }
         abort_if(! $order->checkout_url && $order->status !== 'paid', 503, 'Checkout could not be confirmed. Your items have not been credited. Check this order or contact support before trying a new purchase.');
 
@@ -96,9 +98,8 @@ final class CorefyPaymentService
                 && (! isset($attributes['currency']) || $attributes['currency'] === $order->currency)
                 && (! isset($attributes['amount']) || $this->minorAmount($attributes['amount']) === $order->total_minor)
                 && (! isset($attributes['test_mode']) || $attributes['test_mode'] === $order->payment_test_mode);
-            $url = $attributes['flow_data']['action'] ?? $attributes['hpp_url'] ?? null;
-            $method = $attributes['flow_data']['method'] ?? 'GET';
-            if ($matches && $this->isAllowedCheckoutUrl($url) && is_string($method) && strtoupper($method) === 'GET') {
+            $url = $this->checkoutUrl($attributes);
+            if ($matches && $url !== null) {
                 $order->update(['checkout_url' => $url, 'provider_status' => 'created']);
             }
 
@@ -136,6 +137,11 @@ final class CorefyPaymentService
                     }, 'checkout_url' => null]);
                 } elseif ($order->status !== 'paid' && in_array($status, ['process_failed', 'expired', 'terminated'], true)) {
                     $order->update(['status' => 'failed', 'checkout_url' => null]);
+                } elseif ($order->status === 'pending' && in_array($status, ['created', 'pending', 'processing', 'process_pending'], true)) {
+                    $url = $this->checkoutUrl($attributes);
+                    if ($url !== null) {
+                        $order->update(['checkout_url' => $url]);
+                    }
                 }
             }
             $eventId = hash('sha256', $id.':'.$status.':'.($attributes['updated'] ?? '').':'.($attributes['processed_amount'] ?? ''));
@@ -181,6 +187,23 @@ final class CorefyPaymentService
             && ! parse_url($url, PHP_URL_USER) && ! parse_url($url, PHP_URL_PASS)
             && in_array(strtolower((string) parse_url($url, PHP_URL_HOST)), config('corefy.hpp_hosts'), true)
             && in_array(parse_url($url, PHP_URL_PORT), [null, 443], true);
+    }
+
+    private function checkoutUrl(array $attributes): ?string
+    {
+        $hppUrl = $attributes['hpp_url'] ?? null;
+        if ($this->isAllowedCheckoutUrl($hppUrl)) {
+            return $hppUrl;
+        }
+        $flow = $attributes['flow_data'] ?? null;
+        if (! is_array($flow)) {
+            return null;
+        }
+        $method = $flow['method'] ?? 'GET';
+        $action = $flow['action'] ?? null;
+
+        return is_string($method) && strtoupper($method) === 'GET' && $this->isAllowedCheckoutUrl($action)
+            ? $action : null;
     }
 
     private function client(): PendingRequest

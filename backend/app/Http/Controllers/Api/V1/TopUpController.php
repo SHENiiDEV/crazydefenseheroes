@@ -11,7 +11,17 @@ final class TopUpController
 {
     public function show(): JsonResponse
     {
-        return response()->json(['success' => true, 'data' => config('topup')]);
+        $isCorefy = config('payments.provider') === 'corefy';
+        $settings = config('topup');
+        $settings['payment_mode'] = $isCorefy ? 'corefy' : 'manual';
+        $settings['test_mode'] = $isCorefy && config('corefy.test_mode');
+        $settings['enabled'] = $isCorefy || $settings['manual_enabled'];
+        if ($isCorefy) {
+            $settings['manual_enabled'] = false;
+            $settings['currencies'] = ['EUR' => $settings['currencies']['EUR']];
+        }
+
+        return response()->json(['success' => true, 'data' => $settings]);
     }
 
     public function store(CreateTopUpRequest $request, TopUpService $topups): JsonResponse

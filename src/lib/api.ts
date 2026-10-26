@@ -139,8 +139,11 @@ export type CatalogProduct = {
 export type Order = {
   id: number;
   public_id: string;
-  status: 'pending' | 'paid' | 'failed' | 'refunded';
+  status: 'pending' | 'paid' | 'failed' | 'refunded' | 'partially_refunded' | 'refund_review';
   provider: string | null;
+  checkout_url?: string | null;
+  provider_status?: string | null;
+  payment_test_mode?: boolean | null;
   total_minor: number;
   currency: string;
   paid_at: string | null;
@@ -371,6 +374,9 @@ export async function openChestApi(
 
 export type TopUpSettings = {
   manual_enabled: boolean;
+  enabled: boolean;
+  payment_mode: 'manual' | 'corefy';
+  test_mode: boolean;
   currency: string;
   diamonds_per_euro: number;
   gold_per_euro: number;
@@ -396,7 +402,7 @@ export async function getOrders(token: string): Promise<Order[]> {
   return payload.data.orders;
 }
 
-export async function purchaseTopUp(token: string, diamonds: number, gold: number, idempotencyKey: string, currency = 'EUR'): Promise<{
+export async function purchaseTopUp(token: string, diamonds: number, gold: number, idempotencyKey: string, currency = 'EUR', consent = false): Promise<{
   order: Order;
   wallet: NonNullable<PlayerState['wallet']>;
 }> {
@@ -407,7 +413,7 @@ export async function purchaseTopUp(token: string, diamonds: number, gold: numbe
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + token,
     },
-    body: JSON.stringify({ diamonds, gold, idempotency_key: idempotencyKey, currency }),
+    body: JSON.stringify({ diamonds, gold, idempotency_key: idempotencyKey, currency, accept_terms: consent, immediate_delivery: consent }),
   });
   const payload = await response.json() as ApiEnvelope<{ order: Order; wallet: NonNullable<PlayerState['wallet']> }>;
 
@@ -415,6 +421,15 @@ export async function purchaseTopUp(token: string, diamonds: number, gold: numbe
     throw new Error(payload.error?.message ?? 'Wallet top-up failed.');
   }
 
+  return payload.data;
+}
+
+export async function checkOrderPayment(token: string, orderId: number): Promise<{ order: Order; wallet: NonNullable<PlayerState['wallet']> }> {
+  const response = await fetch(API_BASE_URL + '/me/orders/' + orderId + '/payment-status', {
+    method: 'POST', headers: { Accept: 'application/json', Authorization: 'Bearer ' + token },
+  });
+  const payload = await response.json() as ApiEnvelope<{ order: Order; wallet: NonNullable<PlayerState['wallet']> }>;
+  if (!response.ok || !payload.success) throw new Error(payload.error?.message ?? 'Payment could not be verified. Please retry.');
   return payload.data;
 }
 

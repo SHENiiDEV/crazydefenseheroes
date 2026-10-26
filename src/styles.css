@@ -1778,3 +1778,11 @@ h1 span { color: #77563e; } h1 em { color: #b84d2e; } h1 strong { color: #4c3a2e
   .arena-tabs-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 14px; }
   .arena-tabs-nav .arena-tab-btn { min-width: 0; padding: 12px 8px; white-space: normal; }
 }
+.treasury-consents { display: grid; gap: 16px; margin: 20px 0; padding-top: 18px; border-top: 1px dashed #bda98b; }
+.treasury-consents label { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.6; color: #5b4233; }
+.treasury-consents input { flex: 0 0 auto; width: 17px; height: 17px; margin-top: 3px; accent-color: #b84d2e; }
+.treasury-consents a, .treasury-payment-actions a { color: #9d492a; text-decoration: underline; text-underline-offset: 3px; }
+.treasury-payment-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; font-size: 13px; }
+.treasury-payment-actions button { padding: 8px 14px; border: 1px solid #bda98b; color: #5b4233; background: #fff9e7; cursor: pointer; }
+.treasury-history .treasury-payment-actions + .treasury-download { grid-column: 4; grid-row: auto; }
+@media (max-width: 900px) { .treasury-history .treasury-payment-actions + .treasury-download { grid-column: 2; } }

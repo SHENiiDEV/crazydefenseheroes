@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { downloadInvoice, getOrders, getPlayerState, getTopUpSettings, Order, PlayerState, purchaseTopUp, TopUpSettings } from '../../lib/api';
+import { API_BASE_URL, checkOrderPayment, downloadInvoice, getOrders, getPlayerState, getTopUpSettings, Order, PlayerState, purchaseTopUp, TopUpSettings } from '../../lib/api';
 
 type Props = {
   player: PlayerState;
@@ -18,6 +18,10 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
   const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [downloadId, setDownloadId] = useState<number | null>(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [immediateDelivery, setImmediateDelivery] = useState(false);
+  const [paymentOrderId, setPaymentOrderId] = useState<number | null>(null);
+  const [checkingId, setCheckingId] = useState<number | null>(null);
   // Keep the reference on failures: retrying a timed-out request cannot credit twice.
   const purchaseRef = useRef<{ amounts: string; key: string } | null>(null);
   const submitLock = useRef(false);
@@ -34,13 +38,57 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
       const auth = token();
       getTopUpSettings(auth).then((value) => { if (!cancelled) setSettings(value); })
         .catch((reason: Error) => { if (!cancelled) setError(reason.message); });
-      getOrders(auth).then((value) => { if (!cancelled) setOrders(value); })
+      getOrders(auth).then((value) => { if (!cancelled) {
+        setOrders(value);
+        const reference = new URLSearchParams(window.location.search).get('payment_return');
+        const order = value.find((item) => item.public_id === reference && item.provider === 'corefy');
+        if (order) { setPaymentOrderId(order.id); setSuccess('Checking your payment with Sterling Pay. Goods are credited only after confirmation.'); }
+      } })
         .catch((reason: Error) => { if (!cancelled) setHistoryError(reason.message); });
     } catch (reason) {
       setError((reason as Error).message);
     }
     return () => { cancelled = true; };
   }, []);
+
+  const isCorefy = settings?.payment_mode === 'corefy';
+  const consentGiven = acceptTerms && immediateDelivery;
+  const enabled = settings?.enabled ?? settings?.manual_enabled ?? false;
+
+  const checkPayment = async (id: number) => {
+    setCheckingId(id);
+    setHistoryError('');
+    try {
+      const result = await checkOrderPayment(token(), id);
+      setOrders((previous) => [result.order, ...previous.filter((item) => item.id !== id)]);
+      onUpdatePlayer((previous) => ({ ...previous, wallet: result.wallet }));
+      if (result.order.status === 'paid') {
+        setSuccess('Payment confirmed. Your goods have been credited. Your PDF invoice is available below.');
+        setPaymentOrderId(null);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('payment_return');
+        window.history.replaceState(null, '', url);
+      } else if (result.order.status !== 'pending') {
+        setSuccess('Order status: ' + result.order.status.replace(/_/g, ' ') + '. No additional goods have been credited.');
+        setPaymentOrderId(null);
+      }
+    } catch (reason) { setHistoryError((reason as Error).message); }
+    finally { setCheckingId(null); }
+  };
+
+  useEffect(() => {
+    if (!paymentOrderId) return;
+    let cancelled = false;
+    let timer: number;
+    let attempts = 0;
+    const poll = async () => {
+      if (cancelled) return;
+      await checkPayment(paymentOrderId);
+      if (!cancelled && ++attempts < 24) timer = window.setTimeout(poll, 5000);
+    };
+    void poll();
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [paymentOrderId]);
 
   const validAmount = (value: string) => /^\d+$/.test(value) && Number.isSafeInteger(Number(value))
     && Number(value) <= (settings?.max_quantity ?? 0);
@@ -69,7 +117,7 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
 
   const purchase = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!amountsValid || !settings?.manual_enabled || submitLock.current) return;
+    if (!amountsValid || !enabled || (isCorefy && !consentGiven) || submitLock.current) return;
     submitLock.current = true;
     setBusy(true);
     setError('');
@@ -79,9 +127,15 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
       purchaseRef.current = { amounts, key: window.crypto.randomUUID() };
     }
     try {
-      const result = await purchaseTopUp(token(), Number(diamonds), Number(gold), purchaseRef.current.key, currency);
+      const result = await purchaseTopUp(token(), Number(diamonds), Number(gold), purchaseRef.current.key, currency, consentGiven);
       onUpdatePlayer((previous) => ({ ...previous, wallet: result.wallet }));
       setOrders((previous) => [result.order, ...previous.filter((order) => order.id !== result.order.id)]);
+      if (result.order.status !== 'paid') {
+        setSuccess('Your order is awaiting payment. Complete checkout with Sterling Pay; no goods have been credited yet.');
+        setPaymentOrderId(result.order.id);
+        if (result.order.checkout_url) window.location.assign(result.order.checkout_url);
+        return;
+      }
       setSuccess(`Your treasury has been replenished. Your PDF invoice is ready; the receipt email is ${result.order.invoice?.sent_at ? 'sent' : 'queued'}.`);
       purchaseRef.current = null;
       setDiamonds('0');
@@ -156,12 +210,20 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
           <p className="treasury-receipt-note">Your total and invoice use {currency}. These are fixed game prices, not a live exchange-rate service.</p>
           <dl><div><dt>Diamonds</dt><dd>{money(diamondCost)}</dd></div><div><dt>Gold coins</dt><dd>{money(goldCost)}</dd></div>
             <div className="treasury-total"><dt>Total value</dt><dd>{money(diamondCost + goldCost)}</dd></div></dl>
-          <p className="treasury-mode"><b>Manual purchase</b>No card payment is collected. Confirming adds the selected currency to your account.</p>
-          <p className="treasury-receipt-note">A PDF invoice and receipt will be sent to <strong>{player.user.email}</strong>.</p>
-          <button className="button button-orange" type="submit" disabled={!amountsValid || busy || !settings.manual_enabled}>
-            {busy ? 'Processing purchase…' : 'Confirm purchase'} <span aria-hidden="true">↗</span>
+          <p className="treasury-mode"><b>{isCorefy ? (settings.test_mode ? 'Sterling Pay · test checkout' : 'Pay with Sterling Pay') : 'Manual purchase'}</b>
+            {isCorefy ? 'EUR payments are completed on the provider’s hosted page. Goods are credited only after the server verifies payment.' : 'No card payment is collected. Confirming adds the selected currency to your account.'}
+            {isCorefy && settings.test_mode && ' Test mode is active. No real payment is collected.'}</p>
+          {isCorefy && <div className="treasury-consents">
+            <label><input type="checkbox" checked={acceptTerms} onChange={(event) => setAcceptTerms(event.target.checked)} disabled={busy} required />
+              <span>I agree to the <a href={`${API_BASE_URL}/legal/terms/page`} target="_blank" rel="noreferrer">Terms & Conditions</a> and acknowledge the <a href={`${API_BASE_URL}/legal/privacy/page`} target="_blank" rel="noreferrer">Privacy Policy</a>.</span></label>
+            <label><input type="checkbox" checked={immediateDelivery} onChange={(event) => setImmediateDelivery(event.target.checked)} disabled={busy} required />
+              <span>I expressly consent to immediate supply of the digital goods after payment and acknowledge that I lose my cancellation right once supply begins. My statutory rights for faulty or misdescribed content are unaffected.</span></label>
+          </div>}
+          <p className="treasury-receipt-note">{isCorefy ? 'After payment confirmation, a' : 'A'} PDF invoice and receipt will be sent to <strong>{player.user.email}</strong>.</p>
+          <button className="button button-orange" type="submit" disabled={!amountsValid || busy || !enabled || (isCorefy && !consentGiven)}>
+            {busy ? 'Preparing your order…' : isCorefy ? `Pay ${money(diamondCost + goldCost)}` : 'Confirm purchase'} <span aria-hidden="true">↗</span>
           </button>
-          {!settings.manual_enabled && <p role="status">Manual purchases are currently paused.</p>}
+          {!enabled && <p role="status">Purchases are currently paused.</p>}
           <small>Each currency is rounded up to the nearest cent.</small>
         </aside>
       </form>}
@@ -176,7 +238,11 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
               <small>{new Date(order.created_at).toLocaleDateString('en-GB')} · {order.invoice?.invoice_number ?? order.public_id.slice(0, 8)}</small></div>
             <span>{money(order.total_minor, order.currency)}</span>
             <span className="treasury-order-status">{order.status === 'paid' ? 'Completed' : order.status}
-              <small>{order.invoice ? (order.invoice.sent_at ? 'Receipt sent' : 'Receipt pending') : 'Invoice pending'}</small></span>
+              <small>{order.payment_test_mode ? 'Test payment · ' : ''}{order.invoice ? (order.invoice.sent_at ? 'Receipt sent' : 'Receipt pending') : 'Invoice after payment confirmation'}</small></span>
+            {order.provider === 'corefy' && order.status === 'pending' && <div className="treasury-payment-actions">
+              {order.checkout_url && <a href={order.checkout_url}>Continue payment ↗</a>}
+              <button type="button" disabled={checkingId === order.id} onClick={() => { void checkPayment(order.id); }}>{checkingId === order.id ? 'Checking…' : 'Check payment'}</button>
+            </div>}
             <button type="button" className="treasury-download" disabled={!order.invoice || downloadId === order.id} onClick={() => download(order)}>
               {downloadId === order.id ? 'Downloading…' : 'Invoice PDF'} <i className="fa-solid fa-arrow-down" aria-hidden="true" /></button>
           </li>)}</ul>}

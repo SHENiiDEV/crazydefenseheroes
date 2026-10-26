@@ -32,6 +32,9 @@
     </div>
 
     <h1>Invoice</h1>
+    @if ($invoice->order->payment_test_mode)
+        <p><strong>TEST PAYMENT - No real funds collected. Not a tax invoice.</strong></p>
+    @endif
     <div class="muted">Invoice number: {{ $invoice->invoice_number }}<br>Issued: {{ $invoice->issued_at->format('Y-m-d') }}</div>
 
     <table class="meta">

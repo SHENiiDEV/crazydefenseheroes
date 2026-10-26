@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'total_minor',
     'currency',
     'paid_at',
+    'checkout_url', 'provider_status', 'payment_test_mode', 'digital_content_consent_at', 'purchase_terms_version',
 ])]
 #[Visible([
     'id',
@@ -31,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'created_at',
     'items',
     'invoice',
+    'checkout_url', 'provider_status', 'payment_test_mode',
 ])]
 class Order extends Model
 {
@@ -39,6 +41,8 @@ class Order extends Model
         return [
             'total_minor' => 'integer',
             'paid_at' => 'datetime',
+            'payment_test_mode' => 'boolean',
+            'digital_content_consent_at' => 'datetime',
         ];
     }
 

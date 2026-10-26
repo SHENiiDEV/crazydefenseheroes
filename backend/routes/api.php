@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\CatalogController;
+use App\Http\Controllers\Api\V1\CorefyPaymentController;
 use App\Http\Controllers\Api\V1\CountriesController;
 use App\Http\Controllers\Api\V1\EndlessProgressController;
 use App\Http\Controllers\Api\V1\GameRulesController;
@@ -36,6 +37,7 @@ Route::prefix('v1')->group(function (): void {
 
     Route::post('/login', LoginController::class)->middleware('throttle:auth')->name('api.v1.login');
     Route::get('/catalog', CatalogController::class)->middleware('throttle:api')->name('api.v1.catalog');
+    Route::post('/payments/corefy/webhook', [CorefyPaymentController::class, 'webhook'])->middleware('throttle:webhook')->name('api.v1.corefy.webhook');
     Route::post('/payments/webhooks/{provider}', [PaymentController::class, 'webhook'])
         ->middleware('throttle:webhook')
         ->name('api.v1.payments.webhook');
@@ -55,6 +57,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/me/game/progress', [EndlessProgressController::class, 'show'])->name('api.v1.me.game.progress');
         Route::post('/me/game/checkpoints', [EndlessProgressController::class, 'checkpoint'])->name('api.v1.me.game.checkpoints');
         Route::get('/me/orders', [OrderController::class, 'index'])->name('api.v1.me.orders');
+        Route::post('/me/orders/{order}/payment-status', [CorefyPaymentController::class, 'status'])->name('api.v1.me.orders.payment-status');
         Route::post('/me/orders', [OrderController::class, 'store'])->name('api.v1.me.orders.store');
         Route::post('/me/orders/{order}/sandbox-pay', [PaymentController::class, 'sandboxPay'])
             ->name('api.v1.me.orders.sandbox-pay');

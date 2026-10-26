@@ -13,7 +13,12 @@ class TopUpService
 {
     public function purchase(User $user, int $diamonds, int $gold, string $idempotencyKey, string $currency = 'EUR'): Order
     {
-        abort_unless(config('topup.manual_enabled'), 403, 'Manual purchases are currently disabled.');
+        $isCorefy = config('payments.provider') === 'corefy';
+        abort_unless($isCorefy || config('topup.manual_enabled'), 403, 'Purchases are currently disabled.');
+        if ($isCorefy) {
+            abort_unless($currency === 'EUR', 422, 'Sterling Pay currently supports EUR only.');
+            app(CorefyPaymentService::class)->assertConfigured();
+        }
 
         if ($diamonds + $gold === 0) {
             throw ValidationException::withMessages(['diamonds' => ['Choose at least one diamond or gold coin.']]);
@@ -24,11 +29,12 @@ class TopUpService
             throw ValidationException::withMessages(['currency' => ['Choose EUR, GBP or USD.']]);
         }
 
-        $order = DB::transaction(function () use ($user, $diamonds, $gold, $idempotencyKey, $currency, $rates): Order {
+        $order = DB::transaction(function () use ($user, $diamonds, $gold, $idempotencyKey, $currency, $rates, $isCorefy): Order {
             // Serialize requests from the same player, including duplicate clicks and retries.
             User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
             $existing = $user->orders()->with('items')->where('idempotency_key', $idempotencyKey)->first();
             if ($existing) {
+                abort_unless(($existing->provider === 'corefy') === $isCorefy, 422, 'This reference belongs to a different checkout mode.');
                 $amounts = $existing->items->pluck('grant_quantity', 'product_code');
                 if ((int) ($amounts['custom-diamonds'] ?? 0) !== $diamonds || (int) ($amounts['custom-gold'] ?? 0) !== $gold || $existing->currency !== $currency) {
                     throw ValidationException::withMessages(['idempotency_key' => ['This purchase reference was already used for a different amount.']]);
@@ -43,6 +49,10 @@ class TopUpService
                 'idempotency_key' => $idempotencyKey,
                 'total_minor' => 0,
                 'currency' => $currency,
+                'provider' => $isCorefy ? 'corefy' : 'manual',
+                'payment_test_mode' => $isCorefy ? config('corefy.test_mode') : null,
+                'digital_content_consent_at' => $isCorefy ? now() : null,
+                'purchase_terms_version' => $isCorefy ? config('legal.version') : null,
             ]);
 
             foreach ([['diamonds', $diamonds, 'diamonds_per_unit', 'Diamonds'], ['gold', $gold, 'gold_per_unit', 'Gold coins']] as [$code, $amount, $rate, $label]) {
@@ -69,7 +79,7 @@ class TopUpService
                     'grant_quantity' => $amount,
                     'unit_price_minor' => $price,
                     'currency' => $currency,
-                    'metadata' => ['units_per_currency_unit' => $unitsPerUnit, 'manual' => true],
+                    'metadata' => ['units_per_currency_unit' => $unitsPerUnit, 'manual' => ! $isCorefy],
                 ]);
             }
 
@@ -78,6 +88,8 @@ class TopUpService
             return $order;
         });
 
-        return app(PaymentService::class)->markPaid($order, 'manual', 'manual-'.$order->public_id);
+        return $isCorefy
+            ? app(CorefyPaymentService::class)->checkout($order)
+            : app(PaymentService::class)->markPaid($order, 'manual', 'manual-'.$order->public_id);
     }
 }

@@ -19,11 +19,19 @@
         </div>
         <p>Hello {{ $invoice->user->name }},</p>
         <p>Thank you for your Crazy Defense Hereoes purchase. Your invoice is attached as a PDF.</p>
+        @if ($invoice->order->payment_test_mode)
+            <p><strong>TEST PAYMENT: No real funds were collected. This is not a tax invoice.</strong></p>
+        @endif
         @if ($invoice->order->provider === 'manual')
             <p>This is a manual top-up. No money was collected through a payment gateway. The total below is the reference value of your digital goods.</p>
         @endif
         <p><strong>Invoice:</strong> {{ $invoice->invoice_number }}<br>
         <strong>Total:</strong> {{ number_format($invoice->total_minor / 100, 2, '.', '') }} {{ $invoice->currency }}</p>
+        @if ($invoice->order->digital_content_consent_at)
+            <p>You expressly requested immediate supply after payment and acknowledged loss of the applicable cancellation right once supply begins. Your statutory rights for faulty or misdescribed content remain unaffected.</p>
+            <p>Consent recorded: {{ $invoice->order->digital_content_consent_at->toIso8601String() }}.<br>Terms version: {{ $invoice->order->purchase_terms_version }}.</p>
+            <p><a href="{{ route('api.v1.legal.page', ['document' => 'terms']) }}">Terms &amp; Conditions</a> · <a href="{{ route('api.v1.legal.page', ['document' => 'refunds']) }}">Delivery &amp; Refunds</a></p>
+        @endif
         <p>Keep this confirmation for your records.</p>
         <div class="footer">
             <p><strong>{{ config('company.name', 'Crazy Defense Hereoes Ltd') }}</strong></p>

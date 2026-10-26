@@ -384,11 +384,12 @@ export function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authInitialTab, setAuthInitialTab] = useState<AuthTab>('register');
   const [legalModalTab, setLegalModalTab] = useState<LegalDocType | null>(null);
-  const [arenaInitialTab, setArenaInitialTab] = useState<'battle' | 'treasury'>('battle');
+  const paymentReturn = new URLSearchParams(window.location.search).has('payment_return');
+  const [arenaInitialTab, setArenaInitialTab] = useState<'battle' | 'treasury'>(paymentReturn ? 'treasury' : 'battle');
   const [notice, setNotice] = useState('');
   const [player, setPlayer] = useState<PlayerState | null>(null);
   const [company, setCompany] = useState<CompanyInfo>(DEFAULT_COMPANY_INFO);
-  const [currentView, setCurrentView] = useState<'landing' | 'game'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'game'>(paymentReturn ? 'game' : 'landing');
 
   const active = chests.find((chest) => chest.id === activeChest) ?? chests[1];
 
@@ -768,7 +769,7 @@ export function App() {
               <h4 className="footer-heading">
                 {language === 'RU' ? 'ПЛАТЕЖИ И БЕЗОПАСНОСТЬ' : 'PAYMENTS & SECURITY'}
               </h4>
-              <p className="footer-security-text">Current mode: manual allocations. No card payment is collected. Choose EUR, GBP or USD in Treasury; your order and invoice show the selected currency.</p>
+              <p className="footer-security-text">Treasury shows the available checkout method, currency and final total before you confirm. Payment details are entered only on the payment provider’s hosted page when online checkout is enabled.</p>
               <p className="footer-security-text">Fixed chest contents, saved account balances and downloadable invoices. Virtual items have no cash redemption or transfer value.</p>
               <div className="footer-ssl-note">
                 <span className="ssl-lock-icon"><i className="fa-solid fa-lock" /></span>
@@ -828,8 +829,8 @@ export function App() {
             </div>
             <div className="footer-bottom-tags">
               <span className="footer-tag">UK PRIVACY POLICY</span>
-              <span className="footer-tag">MANUAL PURCHASE MODE</span>
-              <span className="footer-tag">EUR · GBP · USD</span>
+              <span className="footer-tag">CLEAR ORDER TOTALS</span>
+              <span className="footer-tag">DIGITAL GOODS</span>
             </div>
           </div>
         </div>

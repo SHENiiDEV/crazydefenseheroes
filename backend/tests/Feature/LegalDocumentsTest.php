@@ -11,7 +11,7 @@ class LegalDocumentsTest extends TestCase
     public function test_public_policy_and_api_expose_the_same_current_document(string $type): void
     {
         config(['company.name' => 'PROTECT YOUR ASSETS TODAY LTD', 'company.number' => '15969857']);
-        $api = $this->getJson('/api/v1/legal/'.$type)->assertOk()->assertJsonPath('data.version', '2026-10-22');
+        $api = $this->getJson('/api/v1/legal/'.$type)->assertOk()->assertJsonPath('data.version', '2026-10-26');
         $page = $this->get('/legal/'.$type)->assertOk()->assertSee('PROTECT YOUR ASSETS TODAY LTD')->assertSee('15969857');
         $fullPage = $this->get('/api/v1/legal/'.$type.'/page', ['Accept' => 'text/html'])
             ->assertOk()->assertHeader('Content-Type', 'text/html; charset=utf-8')

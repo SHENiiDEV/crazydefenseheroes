@@ -27,6 +27,8 @@ class CreateTopUpRequest extends FormRequest
             'gold' => ['required', 'integer', 'min:0', 'max:'.config('topup.max_quantity')],
             'idempotency_key' => ['required', 'string', 'min:8', 'max:160'],
             'currency' => ['sometimes', 'required', 'string', 'in:EUR,GBP,USD'],
+            'accept_terms' => config('payments.provider') === 'corefy' ? ['required', 'accepted'] : ['sometimes', 'boolean'],
+            'immediate_delivery' => config('payments.provider') === 'corefy' ? ['required', 'accepted'] : ['sometimes', 'boolean'],
         ];
     }
 }

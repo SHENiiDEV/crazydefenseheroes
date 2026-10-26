@@ -8,6 +8,11 @@ class LegalDocumentService
     {
         $document = config('legal.documents.'.$type);
         abort_unless(is_array($document), 404);
+        if (config('payments.provider') === 'corefy') {
+            foreach (config('corefy_legal.'.$type, []) as $sectionIndex => $paragraphs) {
+                $document['sections'][$sectionIndex]['paragraphs'] = $paragraphs;
+            }
+        }
         $replacements = [];
         foreach (config('company') as $key => $value) {
             $replacements['{company.'.$key.'}'] = (string) $value;

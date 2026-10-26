@@ -17,6 +17,7 @@ final class PaymentController
     public function sandboxPay(Request $request, Order $order, PaymentService $payments): JsonResponse
     {
         abort_unless(app()->environment(['local', 'testing']), 404);
+        abort_if(config('payments.provider') === 'corefy' || $order->provider === 'corefy', 404);
         $this->assertOwner($request, $order);
 
         $paidOrder = $payments->markPaid($order, 'sandbox', 'sandbox-'.$order->public_id);
@@ -29,6 +30,7 @@ final class PaymentController
 
     public function webhook(PaymentWebhookRequest $request, string $provider, PaymentService $payments): JsonResponse
     {
+        abort_if(config('payments.provider') === 'corefy' || $provider === 'corefy', 404);
         $this->verifySignature($request);
         $data = $request->validated();
 
@@ -46,6 +48,8 @@ final class PaymentController
                 ->where('public_id', $data['order_id'])
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            abort_if($order->provider === 'corefy', 404);
 
             if ($order->total_minor !== $data['amount_minor'] || $order->currency !== strtoupper($data['currency'])) {
                 throw ValidationException::withMessages([

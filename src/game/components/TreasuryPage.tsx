@@ -211,7 +211,7 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
           <p className="treasury-receipt-note">Your total and invoice use {currency}. These are fixed game prices, not a live exchange-rate service.</p>
           <dl><div><dt>Diamonds</dt><dd>{money(diamondCost)}</dd></div><div><dt>Gold coins</dt><dd>{money(goldCost)}</dd></div>
             <div className="treasury-total"><dt>Total value</dt><dd>{money(diamondCost + goldCost)}</dd></div></dl>
-          <p className="treasury-mode"><b>{isCorefy ? (testMode ? 'Sterling Pay · test checkout' : 'Pay with Sterling Pay') : 'Manual purchase'}</b>
+          <p className="treasury-mode"><b>{isCorefy ? (testMode ? 'Sterling Pay · test checkout' : 'Pay with credit card') : 'Manual purchase'}</b>
             {isCorefy ? `${currency} payments are completed on the provider’s hosted page. Goods are credited only after the server verifies payment.` : 'No card payment is collected. Confirming adds the selected currency to your account.'}
             {isCorefy && testMode && ' Test mode is active. No real payment is collected.'}</p>
           {isCorefy && <div className="treasury-consents">

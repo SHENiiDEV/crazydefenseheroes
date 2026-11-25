@@ -94,6 +94,7 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
     && Number(value) <= (settings?.max_quantity ?? 0);
   const amountsValid = validAmount(diamonds) && validAmount(gold) && Number(diamonds) + Number(gold) > 0;
   const rates = settings?.currencies[currency];
+  const testMode = rates?.test_mode ?? settings?.test_mode ?? false;
   const diamondCost = rates && validAmount(diamonds) ? Math.ceil(Number(diamonds) * 100 / rates.diamonds_per_unit) : 0;
   const goldCost = rates && validAmount(gold) ? Math.ceil(Number(gold) * 100 / rates.gold_per_unit) : 0;
   const money = (minor: number, code = currency) => new Intl.NumberFormat('en-GB', { style: 'currency', currency: code }).format(minor / 100);
@@ -210,9 +211,9 @@ export function TreasuryPage({ player, onUpdatePlayer }: Props) {
           <p className="treasury-receipt-note">Your total and invoice use {currency}. These are fixed game prices, not a live exchange-rate service.</p>
           <dl><div><dt>Diamonds</dt><dd>{money(diamondCost)}</dd></div><div><dt>Gold coins</dt><dd>{money(goldCost)}</dd></div>
             <div className="treasury-total"><dt>Total value</dt><dd>{money(diamondCost + goldCost)}</dd></div></dl>
-          <p className="treasury-mode"><b>{isCorefy ? (settings.test_mode ? 'Sterling Pay · test checkout' : 'Pay with Sterling Pay') : 'Manual purchase'}</b>
-            {isCorefy ? 'EUR payments are completed on the provider’s hosted page. Goods are credited only after the server verifies payment.' : 'No card payment is collected. Confirming adds the selected currency to your account.'}
-            {isCorefy && settings.test_mode && ' Test mode is active. No real payment is collected.'}</p>
+          <p className="treasury-mode"><b>{isCorefy ? (testMode ? 'Sterling Pay · test checkout' : 'Pay with Sterling Pay') : 'Manual purchase'}</b>
+            {isCorefy ? `${currency} payments are completed on the provider’s hosted page. Goods are credited only after the server verifies payment.` : 'No card payment is collected. Confirming adds the selected currency to your account.'}
+            {isCorefy && testMode && ' Test mode is active. No real payment is collected.'}</p>
           {isCorefy && <div className="treasury-consents">
             <label><input type="checkbox" checked={acceptTerms} onChange={(event) => setAcceptTerms(event.target.checked)} disabled={busy} required />
               <span>I agree to the <a href={`${API_BASE_URL}/legal/terms/page`} target="_blank" rel="noreferrer">Terms & Conditions</a> and acknowledge the <a href={`${API_BASE_URL}/legal/privacy/page`} target="_blank" rel="noreferrer">Privacy Policy</a>.</span></label>

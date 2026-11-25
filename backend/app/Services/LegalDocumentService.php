@@ -14,6 +14,9 @@ class LegalDocumentService
             }
         }
         $replacements = [];
+        if (config('payments.provider') === 'corefy') {
+            $replacements['{payment.currencies}'] = implode(', ', app(CorefyPaymentService::class)->currencies());
+        }
         foreach (config('company') as $key => $value) {
             $replacements['{company.'.$key.'}'] = (string) $value;
         }

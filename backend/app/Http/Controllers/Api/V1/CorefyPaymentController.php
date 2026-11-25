@@ -21,12 +21,14 @@ final class CorefyPaymentController
 
     public function webhook(Request $request, CorefyPaymentService $payments): JsonResponse
     {
-        $payments->verifySignature($request->getContent(), (string) $request->header('X-Signature'));
+        $currency = (string) $request->route('currency', 'EUR');
+        $payments->verifySignature($request->getContent(), (string) $request->header('X-Signature'), $currency);
         $data = $request->validate([
             'data.type' => ['required', 'in:payment-invoices'], 'data.id' => ['required', 'string', 'regex:/^[A-Za-z0-9_-]{1,160}$/D'],
             'data.attributes.reference_id' => ['required', 'uuid'],
         ])['data'];
-        $order = Order::query()->where('public_id', $data['attributes']['reference_id'])->where('provider', 'corefy')->firstOrFail();
+        $order = Order::query()->where('public_id', $data['attributes']['reference_id'])
+            ->where('provider', 'corefy')->where('currency', $currency)->firstOrFail();
         $payments->synchronise($order, $data['id']);
 
         return response()->json(['status' => 'ok', 'reference_id' => $order->public_id]);

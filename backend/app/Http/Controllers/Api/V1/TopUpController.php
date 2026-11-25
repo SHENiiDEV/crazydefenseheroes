@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\CreateTopUpRequest;
 use App\Models\User;
+use App\Services\CorefyPaymentService;
 use App\Services\TopUpService;
 use Illuminate\Http\JsonResponse;
 
@@ -18,7 +19,12 @@ final class TopUpController
         $settings['enabled'] = $isCorefy || $settings['manual_enabled'];
         if ($isCorefy) {
             $settings['manual_enabled'] = false;
-            $settings['currencies'] = ['EUR' => $settings['currencies']['EUR']];
+            $payments = app(CorefyPaymentService::class);
+            $settings['currencies'] = array_intersect_key($settings['currencies'], array_flip($payments->currencies()));
+            foreach ($settings['currencies'] as $currency => &$rates) {
+                $rates['test_mode'] = $payments->testMode($currency);
+            }
+            unset($rates);
         }
 
         return response()->json(['success' => true, 'data' => $settings]);

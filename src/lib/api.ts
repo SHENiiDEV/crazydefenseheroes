@@ -381,7 +381,7 @@ export type TopUpSettings = {
   diamonds_per_euro: number;
   gold_per_euro: number;
   max_quantity: number;
-  currencies: Record<string, { diamonds_per_unit: number; gold_per_unit: number }>;
+  currencies: Record<string, { diamonds_per_unit: number; gold_per_unit: number; test_mode?: boolean }>;
 };
 
 export async function getTopUpSettings(token: string): Promise<TopUpSettings> {

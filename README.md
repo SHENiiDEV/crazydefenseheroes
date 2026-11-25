@@ -1,6 +1,12 @@
 # Crazy Defense Hereoes
 
-Первый инкремент лендинга игры: React + Vite + TypeScript в strict-режиме.
+Браузерная Tower Defense: React + Vite + TypeScript в strict-режиме, Laravel 13 API, Sterling Pay / Corefy EUR/GBP checkout с раздельными merchant credentials и приватные PDF-инвойсы.
+
+## Деплой
+
+Полная инструкция: [DEPLOYMENT.md](DEPLOYMENT.md) — сервер с нуля, два `.env`, база, Nginx/HTTPS, Private Email, очередь, платежи, проверки, обновления, бэкапы и восстановление.
+
+На существующем сервере начинайте с раздела «Обновление работающего сайта». Frontend собирается из корня проекта; команды Laravel выполняются из `backend/`.
 
 ## Запуск
 
@@ -39,12 +45,12 @@ php artisan test
 - адаптивный fantasy hero в стиле предоставленного референса;
 - CSS placeholder-art для башни, сундуков и героев — PNG можно подставить без изменения композиции;
 - интерактивный выбор Silver / Gold / Bronze сундука;
-- CTA-уведомление и переключатель языка EN/RU;
+- англоязычный интерфейс;
 - модальная регистрация со всеми полями профиля и адреса, обязательным согласием с политиками и списком стран без запрещённых юрисдикций;
-- Terms & Conditions и Privacy Policy как временные legal-модули;
+- Terms & Conditions, Privacy, Refunds и Security с отдельными HTML-страницами;
 - `.env.example` с реквизитами компании и настройками SMTP Namecheap Private Email.
 - endless game core: Canvas grid, towers, targeting, projectiles and wave checkpoints;
-- catalog, orders, sandbox payments, signed webhooks and idempotent wallet ledger;
+- catalog, orders, Sterling Pay / Corefy EUR/GBP hosted checkout, signed webhooks and idempotent wallet ledger;
 - A4 PDF invoices with Unicode-safe font and queued purchase receipts.
 
 ## Production hardening

@@ -428,7 +428,7 @@ class CorefyPaymentTest extends TestCase
 
     public function test_corefy_policies_describe_eur_hosted_checkout_instead_of_manual_allocations(): void
     {
-        $this->get('/api/v1/legal/terms/page')->assertOk()->assertSee('Only EUR is currently enabled')
+        $this->get('/api/v1/legal/terms/page')->assertOk()->assertSee('Available checkout currencies: EUR.')
             ->assertDontSee('The website currently operates in manual purchase mode');
         $this->get('/api/v1/legal/privacy/page')->assertOk()->assertSee('Sterling Pay / Corefy')->assertSee('UK GDPR');
         $this->get('/api/v1/legal/security/page')->assertOk()->assertSee('independently reads the provider invoice');

@@ -38,6 +38,8 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/login', LoginController::class)->middleware('throttle:auth')->name('api.v1.login');
     Route::get('/catalog', CatalogController::class)->middleware('throttle:api')->name('api.v1.catalog');
     Route::post('/payments/corefy/webhook', [CorefyPaymentController::class, 'webhook'])->middleware('throttle:webhook')->name('api.v1.corefy.webhook');
+    Route::post('/payments/corefy/gbp/webhook', [CorefyPaymentController::class, 'webhook'])
+        ->defaults('currency', 'GBP')->middleware('throttle:webhook')->name('api.v1.corefy.gbp.webhook');
     Route::post('/payments/webhooks/{provider}', [PaymentController::class, 'webhook'])
         ->middleware('throttle:webhook')
         ->name('api.v1.payments.webhook');

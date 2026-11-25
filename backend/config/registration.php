@@ -50,6 +50,6 @@ $allCountries = [
 return [
     'excluded_countries' => $excludedCountries,
     'allowed_countries' => array_values(array_diff($allCountries, $excludedCountries)),
-    'terms_version' => env('TERMS_VERSION', '2026-10-26'),
-    'privacy_version' => env('PRIVACY_VERSION', '2026-10-26'),
+    'terms_version' => env('TERMS_VERSION', '2026-11-25'),
+    'privacy_version' => env('PRIVACY_VERSION', '2026-11-25'),
 ];

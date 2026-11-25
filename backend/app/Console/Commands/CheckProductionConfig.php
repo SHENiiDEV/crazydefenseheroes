@@ -37,6 +37,18 @@ class CheckProductionConfig extends Command
                 'Corefy EUR service is configured' => filled(config('corefy.service_eur')),
                 'Corefy HPP allowlist is configured' => count(config('corefy.hpp_hosts', [])) > 0,
             ];
+            if (config('corefy.gbp.enabled')) {
+                $checks += [
+                    'Corefy GBP account ID is configured' => $this->isRealValue(config('corefy.gbp.account_id')),
+                    'Corefy GBP API key is configured' => $this->isRealValue(config('corefy.gbp.api_key')),
+                    'Corefy GBP callback secret is configured' => $this->isRealValue(config('corefy.gbp.webhook_secret')),
+                    'Corefy GBP uses live mode' => config('corefy.gbp.test_mode') === false,
+                    'Corefy GBP API uses HTTPS' => parse_url(config('corefy.gbp.api_url'), PHP_URL_SCHEME) === 'https',
+                    'Corefy GBP callback URL uses HTTPS' => parse_url(config('corefy.gbp.callback_url') ?: config('app.url'), PHP_URL_SCHEME) === 'https',
+                    'Corefy GBP service is configured' => filled(config('corefy.gbp.service')),
+                    'Corefy GBP HPP allowlist is configured' => count(config('corefy.gbp.hpp_hosts', [])) > 0,
+                ];
+            }
         } else {
             $checks['Payment webhook secret is configured'] = $this->isRealValue(config('payments.webhook_secret'));
         }

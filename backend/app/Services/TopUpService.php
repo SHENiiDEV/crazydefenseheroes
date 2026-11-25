@@ -16,8 +16,8 @@ class TopUpService
         $isCorefy = config('payments.provider') === 'corefy';
         abort_unless($isCorefy || config('topup.manual_enabled'), 403, 'Purchases are currently disabled.');
         if ($isCorefy) {
-            abort_unless($currency === 'EUR', 422, 'Sterling Pay currently supports EUR only.');
-            app(CorefyPaymentService::class)->assertConfigured();
+            abort_unless(in_array($currency, app(CorefyPaymentService::class)->currencies(), true), 422, 'This currency is not enabled for Sterling Pay.');
+            app(CorefyPaymentService::class)->assertConfigured($currency);
         }
 
         if ($diamonds + $gold === 0) {
@@ -50,7 +50,7 @@ class TopUpService
                 'total_minor' => 0,
                 'currency' => $currency,
                 'provider' => $isCorefy ? 'corefy' : 'manual',
-                'payment_test_mode' => $isCorefy ? config('corefy.test_mode') : null,
+                'payment_test_mode' => $isCorefy ? app(CorefyPaymentService::class)->testMode($currency) : null,
                 'digital_content_consent_at' => $isCorefy ? now() : null,
                 'purchase_terms_version' => $isCorefy ? config('legal.version') : null,
             ]);

@@ -11,14 +11,26 @@ use Illuminate\Support\Facades\Http;
 
 final class CorefyPaymentService
 {
-    public function assertConfigured(): void
+    /** @return list<string> */
+    public function currencies(): array
     {
-        foreach (['account_id', 'api_key', 'webhook_secret', 'service_eur'] as $key) {
-            abort_if(blank(config('corefy.'.$key)), 503, 'Sterling Pay checkout is not configured. Please contact support.');
+        return config('corefy.gbp.enabled') ? ['EUR', 'GBP'] : ['EUR'];
+    }
+
+    public function testMode(string $currency = 'EUR'): bool
+    {
+        return (bool) $this->profile($currency)['test_mode'];
+    }
+
+    public function assertConfigured(string $currency = 'EUR'): void
+    {
+        $profile = $this->profile($currency);
+        foreach (['account_id', 'api_key', 'webhook_secret', 'service'] as $key) {
+            abort_if(blank($profile[$key]), 503, 'Sterling Pay checkout is not configured for this currency. Please contact support.');
         }
-        abort_unless(parse_url(config('corefy.api_url'), PHP_URL_SCHEME) === 'https', 503, 'The payment API must use HTTPS.');
-        if (! config('corefy.test_mode')) {
-            $callback = config('corefy.callback_url') ?: route('api.v1.corefy.webhook');
+        abort_unless(parse_url($profile['api_url'], PHP_URL_SCHEME) === 'https', 503, 'The payment API must use HTTPS.');
+        if (! $profile['test_mode']) {
+            $callback = $this->callbackUrl($currency);
             abort_unless(parse_url(config('corefy.frontend_url'), PHP_URL_SCHEME) === 'https'
                 && parse_url($callback, PHP_URL_SCHEME) === 'https', 503, 'Live checkout requires HTTPS return and callback URLs.');
         }
@@ -26,11 +38,12 @@ final class CorefyPaymentService
 
     public function checkout(Order $order): Order
     {
-        $this->assertConfigured();
+        abort_unless(in_array($order->currency, $this->currencies(), true), 422, 'This currency is not enabled for Sterling Pay.');
+        $this->assertConfigured($order->currency);
         [$order, $create] = DB::transaction(function () use ($order): array {
             $order = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
-            abort_unless($order->provider === 'corefy' && $order->currency === 'EUR', 422, 'This order cannot use Sterling Pay.');
-            abort_unless($order->payment_test_mode === (bool) config('corefy.test_mode'), 422, 'This order belongs to a different payment mode.');
+            abort_unless($order->provider === 'corefy', 422, 'This order cannot use Sterling Pay.');
+            abort_unless($order->payment_test_mode === $this->testMode($order->currency), 422, 'This order belongs to a different payment mode.');
             if ($order->checkout_url || $order->status !== 'pending' || $order->provider_status === 'creation_unknown' || $order->provider_payment_id) {
                 return [$order, false];
             }
@@ -58,7 +71,7 @@ final class CorefyPaymentService
         $returnUrl = config('corefy.frontend_url').'/?payment_return='.rawurlencode($order->public_id);
         $attributes = [
             'reference_id' => $order->public_id, 'amount' => $order->total_minor / 100, 'currency' => $order->currency,
-            'service' => config('corefy.service_eur'), 'flow' => 'charge', 'test_mode' => $order->payment_test_mode,
+            'service' => $this->profile($order->currency)['service'], 'flow' => 'charge', 'test_mode' => $order->payment_test_mode,
             'description' => 'Crazy Defense Heroes digital goods - '.$order->public_id,
             'customer' => [
                 'reference_id' => 'player_'.$user->id, 'email' => $user->email, 'name' => $user->name.' '.$user->surname,
@@ -67,11 +80,11 @@ final class CorefyPaymentService
                     'country' => config('country_codes.'.$address->country), 'city' => $address->city, 'street' => $address->street, 'post_code' => $address->postcode],
             ],
             'return_url' => $returnUrl, 'return_urls' => ['success' => $returnUrl, 'pending' => $returnUrl, 'fail' => $returnUrl],
-            'callback_url' => config('corefy.callback_url') ?: route('api.v1.corefy.webhook'),
+            'callback_url' => $this->callbackUrl($order->currency),
             'metadata' => ['source' => 'crazy-defense-heroes', 'transaction_ref' => $order->public_id],
         ];
         try {
-            $response = $this->client()->post('/payment-invoices', ['data' => ['type' => 'payment-invoices', 'attributes' => $attributes]]);
+            $response = $this->client($order->currency)->post('/payment-invoices', ['data' => ['type' => 'payment-invoices', 'attributes' => $attributes]]);
         } catch (ConnectionException) {
             return $order;
         }
@@ -98,7 +111,7 @@ final class CorefyPaymentService
                 && (! isset($attributes['currency']) || $attributes['currency'] === $order->currency)
                 && (! isset($attributes['amount']) || $this->minorAmount($attributes['amount']) === $order->total_minor)
                 && (! isset($attributes['test_mode']) || $attributes['test_mode'] === $order->payment_test_mode);
-            $url = $this->checkoutUrl($attributes);
+            $url = $this->checkoutUrl($attributes, $order->currency);
             if ($matches && $url !== null) {
                 $order->update(['checkout_url' => $url, 'provider_status' => 'created']);
             }
@@ -109,10 +122,10 @@ final class CorefyPaymentService
 
     public function synchronise(Order $order, ?string $invoiceId = null): Order
     {
-        $this->assertConfigured();
+        $this->assertConfigured($order->currency);
         $id = $invoiceId ?? $order->provider_payment_id;
         abort_unless($order->provider === 'corefy' && is_string($id) && preg_match('/^[A-Za-z0-9_-]{1,160}$/D', $id), 422, 'The payment invoice is not yet available. Contact support with the order reference.');
-        $response = $this->client()->get('/payment-invoices/'.rawurlencode($id));
+        $response = $this->client($order->currency)->get('/payment-invoices/'.rawurlencode($id));
         abort_unless($response->successful(), 502, 'The payment provider could not confirm the status. Please retry later.');
         $data = $response->json('data');
         abort_unless(is_array($data) && ($data['id'] ?? null) === $id && ($data['type'] ?? null) === 'payment-invoices', 422, 'The payment invoice does not match.');
@@ -138,7 +151,7 @@ final class CorefyPaymentService
                 } elseif ($order->status !== 'paid' && in_array($status, ['process_failed', 'expired', 'terminated'], true)) {
                     $order->update(['status' => 'failed', 'checkout_url' => null]);
                 } elseif ($order->status === 'pending' && in_array($status, ['created', 'pending', 'processing', 'process_pending'], true)) {
-                    $url = $this->checkoutUrl($attributes);
+                    $url = $this->checkoutUrl($attributes, $order->currency);
                     if ($url !== null) {
                         $order->update(['checkout_url' => $url]);
                     }
@@ -154,9 +167,9 @@ final class CorefyPaymentService
         });
     }
 
-    public function verifySignature(string $body, string $signature): void
+    public function verifySignature(string $body, string $signature, string $currency = 'EUR'): void
     {
-        $secret = (string) config('corefy.webhook_secret');
+        $secret = (string) $this->profile($currency)['webhook_secret'];
         abort_if($secret === '', 503, 'The payment callback is not configured.');
         $expected = base64_encode(sha1($secret.$body.$secret, true));
         abort_unless($signature !== '' && hash_equals($expected, $signature), 401, 'Invalid payment signature.');
@@ -169,7 +182,7 @@ final class CorefyPaymentService
             && $this->minorAmount($attributes['amount'] ?? null) === $order->total_minor
             && is_bool($attributes['test_mode'] ?? null)
             && $attributes['test_mode'] === $order->payment_test_mode
-            && $order->payment_test_mode === (bool) config('corefy.test_mode'), 422, 'Payment reference, amount, currency or mode does not match the order.');
+            && $order->payment_test_mode === $this->testMode($order->currency), 422, 'Payment reference, amount, currency or mode does not match the order.');
     }
 
     private function minorAmount(mixed $amount): ?int
@@ -181,18 +194,18 @@ final class CorefyPaymentService
         return ((int) $matches[1] * 100) + (int) str_pad($matches[2] ?? '', 2, '0');
     }
 
-    private function isAllowedCheckoutUrl(mixed $url): bool
+    private function isAllowedCheckoutUrl(mixed $url, string $currency): bool
     {
         return is_string($url) && parse_url($url, PHP_URL_SCHEME) === 'https'
             && ! parse_url($url, PHP_URL_USER) && ! parse_url($url, PHP_URL_PASS)
-            && in_array(strtolower((string) parse_url($url, PHP_URL_HOST)), config('corefy.hpp_hosts'), true)
+            && in_array(strtolower((string) parse_url($url, PHP_URL_HOST)), $this->profile($currency)['hpp_hosts'], true)
             && in_array(parse_url($url, PHP_URL_PORT), [null, 443], true);
     }
 
-    private function checkoutUrl(array $attributes): ?string
+    private function checkoutUrl(array $attributes, string $currency): ?string
     {
         $hppUrl = $attributes['hpp_url'] ?? null;
-        if ($this->isAllowedCheckoutUrl($hppUrl)) {
+        if ($this->isAllowedCheckoutUrl($hppUrl, $currency)) {
             return $hppUrl;
         }
         $flow = $attributes['flow_data'] ?? null;
@@ -202,14 +215,37 @@ final class CorefyPaymentService
         $method = $flow['method'] ?? 'GET';
         $action = $flow['action'] ?? null;
 
-        return is_string($method) && strtoupper($method) === 'GET' && $this->isAllowedCheckoutUrl($action)
+        return is_string($method) && strtoupper($method) === 'GET' && $this->isAllowedCheckoutUrl($action, $currency)
             ? $action : null;
     }
 
-    private function client(): PendingRequest
+    /** @return array{api_url: string, account_id: string, api_key: string, webhook_secret: string, test_mode: bool, service: string, callback_url: string, hpp_hosts: list<string>} */
+    private function profile(string $currency): array
     {
-        return Http::baseUrl(config('corefy.api_url'))
-            ->withBasicAuth(config('corefy.account_id'), config('corefy.api_key'))
+        abort_unless(in_array($currency, ['EUR', 'GBP'], true), 422, 'This currency is not supported by Sterling Pay.');
+        if ($currency === 'GBP') {
+            return config('corefy.gbp');
+        }
+
+        return [
+            'api_url' => config('corefy.api_url'), 'account_id' => config('corefy.account_id'),
+            'api_key' => config('corefy.api_key'), 'webhook_secret' => config('corefy.webhook_secret'),
+            'test_mode' => (bool) config('corefy.test_mode'), 'service' => config('corefy.service_eur'),
+            'callback_url' => config('corefy.callback_url'), 'hpp_hosts' => config('corefy.hpp_hosts'),
+        ];
+    }
+
+    private function callbackUrl(string $currency): string
+    {
+        return $this->profile($currency)['callback_url'] ?: route($currency === 'GBP' ? 'api.v1.corefy.gbp.webhook' : 'api.v1.corefy.webhook');
+    }
+
+    private function client(string $currency): PendingRequest
+    {
+        $profile = $this->profile($currency);
+
+        return Http::baseUrl($profile['api_url'])
+            ->withBasicAuth($profile['account_id'], $profile['api_key'])
             ->accept('application/vnd.api+json')->contentType('application/vnd.api+json')
             ->connectTimeout(10)->timeout(25)->withOptions(['allow_redirects' => false]);
     }

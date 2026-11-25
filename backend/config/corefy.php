@@ -10,4 +10,15 @@ return [
     'callback_url' => env('COREFY_CALLBACK_URL', ''),
     'frontend_url' => rtrim((string) env('FRONTEND_URL', env('APP_URL', 'http://localhost:6767')), '/'),
     'hpp_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('COREFY_HPP_HOSTS', 'api.sterling-pay.com'))))),
+    'gbp' => [
+        'enabled' => (bool) env('COREFY_GBP_ENABLED', false),
+        'api_url' => rtrim((string) env('COREFY_GBP_API_URL', env('COREFY_API_URL', 'https://api.sterling-pay.com')), '/'),
+        'account_id' => env('COREFY_GBP_ACCOUNT_ID', ''),
+        'api_key' => env('COREFY_GBP_API_KEY', ''),
+        'webhook_secret' => env('COREFY_GBP_WEBHOOK_SECRET', ''),
+        'test_mode' => (bool) env('COREFY_GBP_TEST_MODE', env('COREFY_TEST_MODE', true)),
+        'service' => env('COREFY_SERVICE_GBP', 'payment_card_gbp_hpp'),
+        'callback_url' => env('COREFY_GBP_CALLBACK_URL', ''),
+        'hpp_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('COREFY_GBP_HPP_HOSTS', env('COREFY_HPP_HOSTS', 'api.sterling-pay.com')))))),
+    ],
 ];

@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'version' => '2026-10-26',
+    'version' => '2026-11-25',
     'documents' => [
         'terms' => ['title' => 'Terms & Conditions', 'sections' => [
             ['title' => '1. Your agreement with the operator', 'paragraphs' => [
